@@ -1,0 +1,38 @@
+name: "📌 Tarea de Desarrollo / Historia"
+description: Tarea planificada para el sprint con criterios de aceptación técnicos.
+title: "[TASK]: "
+labels: ["task"]
+type: Task
+projects: ["No-Country-simulation/497"]
+
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objetivo
+      description: Como [rol], quiero [acción] para [beneficio].
+      placeholder: Como usuario, quiero resetear mi contraseña para recuperar acceso...
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Criterios de Aceptación (Definición de Terminado)
+      description: Condiciones que QA y desarrollo verificarán para dar la tarea por completada.
+      placeholder: |
+        - [ ] El endpoint valida que el email exista.
+        - [ ] Se envía un token con expiración de 15 minutos.
+        - [ ] Se muestra feedback visual de éxito en la UI.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Tareas Técnicas / Checklist
+      options:
+        - label: Implementación en Backend / API
+        - label: Integración en Frontend / UI
+        - label: Tests unitarios / de integración añadidos
+        - label: Validación de QA completada
