@@ -1,64 +1,112 @@
-name: 🐛 Bug Report
-description: Report a bug or issue
-title: "[Bug]: "
+name: "🐛 Reporte de Bug (QA)"
+description: Plantilla avanzada de QA con severidad, prioridad y datos de prueba.
+title: "[BUG]: "
 labels: ["bug"]
 type: Bug
 projects: ["S08-26-EQUIPO21-QualityTrack/1"]
 
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar este problema. Por favor completa los campos para facilitar la reproducción del fallo.
+
   - type: textarea
     id: description
     attributes:
-      label: Bug Description
-      description: Clear description of the bug
-      placeholder: What's wrong?
-    validations:
-      required: true
-
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to Reproduce
-      placeholder: |
-        1. Go to...
-        2. Click on...
-        3. See error
-    validations:
-      required: true
-
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected Behavior
-      placeholder: What should happen?
+      label: Descripción / Resumen
+      description: Explicación concisa de qué está fallando y cuándo ocurre.
+      placeholder: El sistema no muestra mensaje de error al enviar formulario vacío...
     validations:
       required: true
 
   - type: textarea
     id: environment
     attributes:
-      label: Environment
+      label: Entorno de Prueba
+      description: Especifica el entorno donde ocurrió la incidencia.
       value: |
-        - OS: 
-        - Browser: 
-        - Device:
+        - **Dispositivo / SO:** (Ej: PC Windows 11 / iPhone 14)
+        - **Navegador y Versión:** (Ej: Chrome v125 / Safari)
+        - **Tipo de Pantalla:** (Desktop / Mobile / Tablet)
+    validations:
+      required: true
+
+  - type: textarea
+    id: preconditions_and_data
+    attributes:
+      label: Precondiciones y Datos de Prueba
+      description: Estado previo requerido e inputs usados (usuarios, contraseñas, URLs o variables).
+      placeholder: |
+        Precondiciones:
+        1. Usuario con rol Admin autenticado.
+
+        Datos de prueba:
+        - Email: qa_test@example.com
+        - Input vacío en campo Contraseña.
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para Reproducir
+      description: Paso a paso exacto para llegar al error.
+      placeholder: |
+        1. Ir a la sección...
+        2. Hacer clic en...
+        3. Enviar el formulario...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado Esperado
+      description: ¿Qué debería pasar según el criterio de aceptación?
+      placeholder: Debería mostrarse un tooltip rojo indicando "Campo obligatorio".
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado Obtenido
+      description: ¿Qué pasó realmente? (Comportamiento erróneo).
+      placeholder: La página recarga sin avisos y se pierden los datos ingresados.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad (Impacto Técnico)
+      description: Grado de afectación técnica en el sistema.
+      options:
+        - "Bloqueante (Blocker) - El sistema/flujo queda inoperativo o pantalla en blanco"
+        - "Crítica (Critical) - Falla función principal sin workaround"
+        - "Mayor (Major) - Falla función importante pero hay camino alternativo"
+        - "Menor (Minor) - Error visual, estético o texto mal escrito"
     validations:
       required: true
 
   - type: dropdown
     id: priority
     attributes:
-      label: Priority
+      label: Prioridad (Urgencia de Negocio)
+      description: Necesidad de resolución para el sprint.
       options:
-        - Low
-        - Medium
-        - High
-        - Critical
+        - "Alta - Debe resolverse en el Sprint actual obligatoriamente"
+        - "Media - Resolver en el Sprint actual si hay capacidad"
+        - "Baja - No urgente, puede planificarse a futuro"
     validations:
       required: true
 
   - type: textarea
-    id: additional
+    id: evidence
     attributes:
-      label: Additional Context
-      placeholder: Screenshots, logs, etc.
+      label: Evidencias y Contexto Adicional
+      description: Arrastra capturas, videos, logs de consola o trazas de error de red.
+      placeholder: Pega aquí capturas de pantalla, logs o comentarios adicionales.
+    validations:
+      required: false
