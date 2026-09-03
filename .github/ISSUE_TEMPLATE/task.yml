@@ -27,6 +27,18 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad
+      description: Nivel de urgencia para el sprint actual.
+      options:
+        - "Alta - Debe resolverse en el Sprint actual obligatoriamente"
+        - "Media - Resolver en el Sprint actual si hay capacidad"
+        - "Baja - No urgente, puede planificarse a futuro"
+    validations:
+      required: true
+
   - type: checkboxes
     id: checklist
     attributes:

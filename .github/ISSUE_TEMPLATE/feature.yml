@@ -49,9 +49,19 @@ body:
         - "Rendimiento y Optimización"
         - "Accesibilidad (a11y)"
         - "Contenido"
-        - "SEO"
         - "Experiencia de Desarrollo (DX / Arquitectura)"
         - "Otro"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mvp_scope
+    attributes:
+      label: ¿Es necesario para el MVP actual?
+      description: Define si esta propuesta es parte del criterio de éxito del MVP o queda para después.
+      options:
+        - "Sí - Es necesario para el criterio de éxito del MVP"
+        - "No - Backlog futuro / fuera de alcance del MVP"
     validations:
       required: true
 
