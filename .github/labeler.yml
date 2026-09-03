@@ -1,0 +1,101 @@
+# Auto-labeling configuration for PRs
+
+# Frontend App
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/frontend/**/*"
+          - "**/*.css"
+          - "**/*.scss"
+          - "**/*.jsx"
+          - "**/*.tsx"
+
+# Backend App
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/backend/**/*"
+          - "**/*.js"
+          - "**/*.ts"
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**/*"
+          - ".github/**/*.md"
+
+# Shared Packages
+packages:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/**/*"
+
+# Testing
+testing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "apps/*/tests/**/*"
+          - "apps/*/e2e/**/*"
+          - "**/*.test.*"
+          - "**/*.spec.*"
+          - "**/vitest.config.*"
+          - "**/playwright.config.*"
+          - "**/jest.config.*"
+
+# CI/CD
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**/*"
+          - ".github/actions/**/*"
+          - "Dockerfile*"
+          - "docker-compose*"
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.config.*"
+          - "**/package.json"
+          - "pnpm-workspace.yaml"
+          - "pnpm-lock.yaml"
+          - ".env*"
+          - ".gitignore"
+          - ".eslintrc*"
+          - ".prettierrc*"
+          - "**/tsconfig*.json"
+
+# Security
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "SECURITY.md"
+          - ".github/workflows/security.yml"
+          - ".env*"
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/package.json"
+          - "pnpm-lock.yaml"
+          - "pnpm-workspace.yaml"
+
+# Performance
+performance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "packages/shared/**/*"
+          - "**/utils/**/*"
+          - "**/performance.*"
+          - "**/optimization.*"
+
+# Monorepo
+monorepo:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pnpm-workspace.yaml"
+          - "apps/*/package.json"
+          - "packages/*/package.json"
