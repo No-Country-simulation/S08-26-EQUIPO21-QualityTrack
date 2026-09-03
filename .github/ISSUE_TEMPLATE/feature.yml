@@ -1,58 +1,77 @@
-name: ✨ Feature Request
-description: Suggest a new feature or improvement
-title: "[Feature]: "
+name: "✨ Solicitud de Funcionalidad"
+description: Sugiere una nueva funcionalidad, mejora o cambio en el sistema.
+title: "[FEATURE]: "
 labels: ["enhancement"]
 type: Feature
-projects: ["S08-26-EQUIPO21-QualityTrack/1"]
+projects: ["No-Country-simulation/497"]
 
 body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por tu propuesta! Por favor completa los campos a continuación para ayudarnos a entender la necesidad y evaluar su impacto.
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem/Need
-      description: What problem does this solve?
-      placeholder: Describe the problem or need...
+      label: Problema o Necesidad
+      description: ¿Qué problema resuelve esta funcionalidad o qué necesidad cubre?
+      placeholder: Describe de forma clara la situación actual, el dolor del usuario o la limitación técnica...
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: Proposed Solution
-      description: How should this work?
-      placeholder: Describe your solution...
+      label: Solución Propuesta
+      description: ¿Cómo debería funcionar la nueva funcionalidad o mejora?
+      placeholder: Explica el comportamiento esperado, flujo de interacción o criterios que debería cumplir la solución...
     validations:
       required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas Consideradas (Opcional)
+      description: ¿Se han evaluado otras opciones, librerías o soluciones provisionales?
+      placeholder: Habíamos pensado en usar X librería o resolverlo mediante el flujo Y, pero...
+    validations:
+      required: false
 
   - type: dropdown
     id: category
     attributes:
-      label: Category
+      label: Categoría
+      description: Selecciona el área principal a la que pertenece esta propuesta.
       options:
-        - UI/UX
-        - Performance
-        - Content
-        - Functionality
-        - Accessibility
-        - SEO
-        - Developer Experience
-        - Other
+        - "UI/UX (Diseño e Interfaz)"
+        - "Funcionalidad (Lógica de Negocio)"
+        - "Rendimiento y Optimización"
+        - "Accesibilidad (a11y)"
+        - "Contenido"
+        - "SEO"
+        - "Experiencia de Desarrollo (DX / Arquitectura)"
+        - "Otro"
     validations:
       required: true
 
   - type: dropdown
     id: priority
     attributes:
-      label: Priority
+      label: Prioridad Estimada
+      description: Nivel de urgencia o impacto para el producto/equipo.
       options:
-        - Low
-        - Medium
-        - High
+        - "Baja - Deseable a futuro (Nice to have)"
+        - "Media - Aporta valor, planificable para siguientes sprints"
+        - "Alta - Impacto clave o bloquea otros desarrollos"
     validations:
       required: true
 
   - type: textarea
     id: additional
     attributes:
-      label: Additional Context
-      placeholder: Mockups, examples, references...
+      label: Contexto Adicional y Recursos
+      description: Arrastra mockups, capturas, diagramas de flujo, enlaces de referencia o especificaciones técnicas.
+      placeholder: Pega aquí capturas de Figma, enlaces, ejemplos de otras plataformas o notas extra...
+    validations:
+      required: false

@@ -3,7 +3,7 @@ description: Plantilla avanzada de QA con severidad, prioridad y datos de prueba
 title: "[BUG]: "
 labels: ["bug"]
 type: Bug
-projects: ["S08-26-EQUIPO21-QualityTrack/1"]
+projects: ["No-Country-simulation/497"]
 
 body:
   - type: markdown
