@@ -2,19 +2,17 @@
 
 ## Resumen
 
-Este documento describe el modelo de datos relacional y la máquina de
-estados de la Orden de Trabajo (OT), que es la entidad central del
-sistema. La documentación está en español; los nombres de entidades,
-campos y endpoints están en inglés, siguiendo la convención de código del
-equipo (ver `CLAUDE.md`). Este documento se actualiza a medida que el
-equipo de backend toma decisiones — ver `docs/adr/` para el razonamiento
-detrás de cada una.
+Este documento describe el modelo de datos relacional y las máquinas de
+estados de `QUOTE` y `WORK_ORDER`. Se actualiza a medida que el equipo
+de backend toma decisiones — ver `docs/adr/` para el razonamiento detrás
+de cada una.
 
 ## Modelo de datos (ERD)
 
 ```mermaid
 erDiagram
-    CUSTOMER ||--o{ QUOTE : requests
+    CUSTOMER ||--o{ REQUEST : submits
+    REQUEST ||--o| QUOTE : generates
     QUOTE ||--o| WORK_ORDER : generates
     WORK_ORDER ||--o{ ROUTE_SHEET : defines
     ROUTE_SHEET ||--o{ OPERATION : contains
@@ -28,9 +26,15 @@ erDiagram
         string name
         string tax_id
     }
-    QUOTE {
+    REQUEST {
         string id PK
         string customer_id FK
+        string description
+        string created_at
+    }
+    QUOTE {
+        string id PK
+        string request_id FK
         string status
         float amount
     }
@@ -83,6 +87,8 @@ archivo en el repo — no hace falta exportar una imagen aparte.
 
 **Nota:** la entidad de usuario se llama `APP_USER` y no `USER` porque
 `USER` es palabra reservada en PostgreSQL y en el estándar SQL.
+`REQUEST` no tiene `customer_id` duplicado en `QUOTE` — el cliente se
+alcanza vía `request_id` (ver ADR-0003).
 
 ## Por qué STATUS_HISTORY es la tabla central
 
@@ -106,6 +112,7 @@ evento que ya quedó registrado en la cotización.
 | ------------------ | ---------------------------------------------------------------- |
 | `pending_approval` | Esperando aprobación del cliente                                 |
 | `approved`         | Aprobada por el cliente — dispara la creación de la `WORK_ORDER` |
+| `rejected`         | Rechazada por el cliente — no genera `WORK_ORDER`                |
 
 ### WORK_ORDER.status
 
@@ -143,10 +150,13 @@ razonamiento detrás de esta decisión.
 
 `GET /work-orders/:id/dossier` es el endpoint más crítico del sistema:
 debe devolver en una sola respuesta todo lo necesario para la pantalla
-central del MVP — datos de la OT, `STATUS_HISTORY` completo, documentos,
-hoja de ruta y control de calidad.
+central del MVP — la solicitud y cotización de origen, datos de la OT,
+`STATUS_HISTORY` completo, documentos, hoja de ruta, operaciones, y
+**todos** los controles de calidad registrados (no solo el más
+reciente, por los reprocesos de ADR-0002).
 
 ## Decisiones relacionadas
 
-Ver `docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md` y
-`docs/adr/0002-reproceso-no-conformidad.md`.
+Ver `docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md`,
+`docs/adr/0002-reproceso-no-conformidad.md` y
+`docs/adr/0003-entidad-request.md`.
