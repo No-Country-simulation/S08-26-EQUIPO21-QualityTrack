@@ -229,5 +229,6 @@ $RECYCLE.BIN/
 *.lnk
 
 .opencode
+scripts
 
 # End of https://www.toptal.com/developers/gitignore/api/node,react,windows,macos,linux
