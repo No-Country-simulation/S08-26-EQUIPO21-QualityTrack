@@ -40,15 +40,34 @@ Ver `CONTRIBUTING.md` para el detalle completo. Resumen:
 
 ## Stack
 
-_A completar en Semana 1 (lenguaje, framework, motor de base de datos, ORM,
-storage de archivos)._
+Decisión completa y alternativas evaluadas en
+@docs/adr/0004-stack-tecnologico.md.
+
+| Capa                   | Elección                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| Lenguaje               | TypeScript (`strict`)                                                                             |
+| Runtime                | Node.js 24 LTS                                                                                    |
+| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                                      |
+| Framework de API       | NestJS 12                                                                                         |
+| Framework de frontend  | React 19 (Vite)                                                                                   |
+| Motor de base de datos | PostgreSQL                                                                                        |
+| ORM                    | Prisma — `schema.prisma` es la fuente de verdad del modelo                                        |
+| Storage de archivos    | Object storage S3-compatible; solo la URL/clave va en `DOCUMENT.url` (proveedor pendiente de ADR) |
+| Testing                | Jest (unit + integración), Supertest para HTTP                                                    |
+| Lint / formato         | oxlint + Prettier                                                                                 |
+
+Los binarios (planos, certificados, PDF) nunca se guardan en la base de
+datos — van a object storage y la BD guarda solo metadatos y la
+referencia.
 
 ## Modelo de datos y decisiones de arquitectura
 
 Ver @docs/architecture.md para el ERD completo y la máquina de estados de
 la OT. Ver @docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md y
 @docs/adr/0002-reproceso-no-conformidad.md para el razonamiento detrás de
-las dos decisiones no obvias del modelo.
+las dos decisiones no obvias del modelo, y
+@docs/adr/0004-stack-tecnologico.md para la decisión de stack (lenguaje,
+framework, motor de base de datos, ORM).
 
 ## Roles y flujo de usuario
 

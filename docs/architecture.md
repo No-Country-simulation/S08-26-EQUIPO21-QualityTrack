@@ -158,5 +158,6 @@ reciente, por los reprocesos de ADR-0002).
 ## Decisiones relacionadas
 
 Ver `docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md`,
-`docs/adr/0002-reproceso-no-conformidad.md` y
-`docs/adr/0003-entidad-request.md`.
+`docs/adr/0002-reproceso-no-conformidad.md`,
+`docs/adr/0003-entidad-request.md` y
+`docs/adr/0004-stack-tecnologico.md`.
