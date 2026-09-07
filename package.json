@@ -8,6 +8,8 @@
     "dev": "pnpm --parallel --filter backend --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
+    "lint:frontend": "pnpm --filter frontend lint",
+    "build:frontend": "pnpm --filter frontend build",
     "prepare": "husky",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
