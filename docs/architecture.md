@@ -19,6 +19,7 @@ erDiagram
     WORK_ORDER ||--o{ QUALITY_CONTROL : records
     WORK_ORDER ||--o{ DOCUMENT : attaches
     WORK_ORDER ||--o{ STATUS_HISTORY : logs
+    WORK_ORDER ||--o| WORK_ORDER : replaces
     APP_USER ||--o{ STATUS_HISTORY : performs
 
     CUSTOMER {
@@ -43,6 +44,7 @@ erDiagram
         string quote_id FK
         string status
         string created_at
+        string replaces_work_order_id FK
     }
     ROUTE_SHEET {
         string id PK
@@ -74,6 +76,7 @@ erDiagram
         string previous_status
         string new_status
         string changed_at
+        string reason
     }
     APP_USER {
         string id PK
@@ -89,6 +92,10 @@ archivo en el repo — no hace falta exportar una imagen aparte.
 `USER` es palabra reservada en PostgreSQL y en el estándar SQL.
 `REQUEST` no tiene `customer_id` duplicado en `QUOTE` — el cliente se
 alcanza vía `request_id` (ver ADR-0003).
+
+`WORK_ORDER.replaces_work_order_id` es una autorreferencia opcional:
+solo se completa cuando la OT es una refabricación que reemplaza a una
+OT cancelada por agotar el límite de reprocesos (ver ADR-0006).
 
 ## Por qué STATUS_HISTORY es la tabla central
 
@@ -121,14 +128,15 @@ El flujo de negocio definido para el MVP:
 Solicitud Cliente → Cotización → Aprobación → Orden de Trabajo (OT) →
 Hoja de Ruta → Operaciones en Planta → Control de Calidad → Entrega
 
-| Valor (código)       | Descripción                                                                      |
-| -------------------- | -------------------------------------------------------------------------------- |
-| `created`            | OT recién generada a partir de una cotización aprobada, todavía sin hoja de ruta |
-| `routed`             | Hoja de ruta definida, lista para producción                                     |
-| `in_production`      | Operaciones de planta en curso                                                   |
-| `in_quality_control` | Pieza terminada, pendiente de inspección                                         |
-| `delivered`          | Control de calidad conforme, ciclo cerrado                                       |
-| `nonconforming`      | Control de calidad detectó una no conformidad                                    |
+| Valor (código)       | Descripción                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `created`            | OT recién generada a partir de una cotización aprobada, todavía sin hoja de ruta                          |
+| `routed`             | Hoja de ruta definida, lista para producción                                                              |
+| `in_production`      | Operaciones de planta en curso                                                                            |
+| `in_quality_control` | Pieza terminada, pendiente de inspección                                                                  |
+| `delivered`          | Control de calidad conforme, ciclo cerrado                                                                |
+| `nonconforming`      | Control de calidad detectó una no conformidad                                                             |
+| `cancelled`          | OT cancelada — requiere motivo en `STATUS_HISTORY.reason`; terminal, igual que `delivered` (ver ADR-0006) |
 
 **Transiciones válidas:**
 
@@ -138,26 +146,51 @@ routed → in_production
 in_production → in_quality_control
 in_quality_control → delivered
 in_quality_control → nonconforming
-nonconforming → in_production
+nonconforming → in_production   (hasta 3 veces por OT)
+created → cancelled
+routed → cancelled
+in_production → cancelled
+in_quality_control → cancelled
+nonconforming → cancelled   (automático, al agotar los 3 reprocesos)
 ```
 
 `in_production` y `in_quality_control`/`nonconforming` forman un ciclo:
 una OT puede pasar por control de calidad más de una vez si hay
-reprocesos. Ver `docs/adr/0002-reproceso-no-conformidad.md` para el
-razonamiento detrás de esta decisión.
+reprocesos, con un límite de **3 vueltas** sobre la misma OT. A partir
+de la cuarta no conformidad, `nonconforming → in_production` deja de ser
+válida: la OT se cancela automáticamente (`cancelled`, con `reason` de
+sistema) y, si el cliente quiere reintentar, se crea una `WORK_ORDER`
+nueva vinculada vía `replaces_work_order_id` a la OT cancelada. El
+conteo de reprocesos se deriva de `STATUS_HISTORY` (filas con
+`new_status = nonconforming`). Ver
+`docs/adr/0002-reproceso-no-conformidad.md` para el límite de 3 vueltas
+y `docs/adr/0006-cancelacion-orden-trabajo.md` para la cancelación y el
+cierre del ciclo.
+
+### Cancelación
+
+`cancelled` es alcanzable desde cualquier estado no terminal — nunca
+desde `delivered` — y es terminal. Toda transición a `cancelled` exige
+`STATUS_HISTORY.reason`: si la cancela una persona, el motivo que
+ingresa; si la dispara el sistema por agotar los reprocesos, un motivo
+fijo (`reprocess_limit_reached`). Ver
+`docs/adr/0006-cancelacion-orden-trabajo.md`.
 
 ## Endpoint del expediente único
 
 `GET /work-orders/:id/dossier` es el endpoint más crítico del sistema:
 debe devolver en una sola respuesta todo lo necesario para la pantalla
 central del MVP — la solicitud y cotización de origen, datos de la OT,
-`STATUS_HISTORY` completo, documentos, hoja de ruta, operaciones, y
+`STATUS_HISTORY` completo, documentos, hoja de ruta, operaciones,
 **todos** los controles de calidad registrados (no solo el más
-reciente, por los reprocesos de ADR-0002).
+reciente, por los reprocesos de ADR-0002), y la OT que esta reemplaza o
+la que la reemplaza a ella, si existe (ver ADR-0006).
 
 ## Decisiones relacionadas
 
 Ver `docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md`,
 `docs/adr/0002-reproceso-no-conformidad.md`,
-`docs/adr/0003-entidad-request.md` y
-`docs/adr/0004-stack-tecnologico.md`.
+`docs/adr/0003-entidad-request.md`,
+`docs/adr/0004-stack-tecnologico.md`,
+`docs/adr/0005-organizacion-por-dominios.md` y
+`docs/adr/0006-cancelacion-orden-trabajo.md`.

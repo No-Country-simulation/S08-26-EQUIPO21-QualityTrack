@@ -12,6 +12,21 @@ consultar una OT y reconstruir todo su historial de punta a punta —
 documentos incluidos — desde una única pantalla, sin recurrir a archivos
 externos ni planillas. Toda decisión de arquitectura se evalúa contra esto.
 
+## Calendario (simulación No Country)
+
+El proyecto dura 5 semanas:
+
+| Semana | Foco                                                                                 |
+| ------ | ------------------------------------------------------------------------------------ |
+| 0      | Onboarding: el equipo se conoce y planifica el proyecto                              |
+| 1 a 3  | Ejecución: se construyen los objetivos definidos                                     |
+| 4      | Entregables: aplicación terminada **y desplegada**, más un video demo del happy path |
+
+El alcance de cualquier propuesta se evalúa contra esta ventana: solo
+tres semanas de ejecución real, y el despliegue tiene que estar listo en
+la semana 4. "Semana 1" en los ADR es el arranque de la ejecución, no de
+la simulación.
+
 ## Flujo de negocio
 
 Solicitud Cliente → Cotización → Aprobación → OT → Hoja de Ruta →
@@ -65,9 +80,17 @@ referencia.
 Ver @docs/architecture.md para el ERD completo y la máquina de estados de
 la OT. Ver @docs/adr/0001-cardinalidad-cotizacion-orden-trabajo.md y
 @docs/adr/0002-reproceso-no-conformidad.md para el razonamiento detrás de
-las dos decisiones no obvias del modelo, y
+las dos decisiones no obvias del modelo,
 @docs/adr/0004-stack-tecnologico.md para la decisión de stack (lenguaje,
-framework, motor de base de datos, ORM).
+framework, motor de base de datos, ORM), y
+@docs/adr/0005-organizacion-por-dominios.md para la organización del
+backend en módulos de feature de NestJS
+(`src/modules/{quotes,work-orders,quality,status-history,dossier,users}`),
+con `status-history` como único módulo que escribe `STATUS_HISTORY` y
+`work_order.status`, y @docs/adr/0006-cancelacion-orden-trabajo.md para
+la cancelación de una OT y el cierre del ciclo de reproceso agotado.
+La estructura de carpetas de referencia está en
+@docs/backend-structure.md.
 
 ## Roles y flujo de usuario
 
@@ -86,6 +109,15 @@ flujo de negocio se ajusta, este archivo se actualiza en el mismo commit
   sostiene el criterio de éxito.
 - No asumir que toda `QUOTE` tiene una `WORK_ORDER` asociada: la relación
   es 1 a (0 o 1) hasta que la cotización se aprueba (ver ADR-0001).
+- Una OT no conforme vuelve a producción sobre la misma `WORK_ORDER`, con
+  un tope de 3 reprocesos: la transición `nonconforming → in_production`
+  se rechaza si ya hay 3 filas `nonconforming` en `STATUS_HISTORY` para
+  esa OT (ver ADR-0002). Al agotarse, la OT se cancela automáticamente
+  (`cancelled`); una eventual OT de refabricación se crea aparte,
+  vinculada vía `replaces_work_order_id` (ver ADR-0006).
+- Toda transición a `cancelled` — manual o automática por reproceso
+  agotado — exige `reason` en la fila de `STATUS_HISTORY`. Nunca se
+  cancela desde `delivered` (ver ADR-0006).
 - El endpoint `GET /work-orders/:id/dossier` debe devolver en una sola
   respuesta todo lo que necesita la pantalla de expediente único: datos
   de la OT, historial de estados, documentos, hoja de ruta y control de
