@@ -17,6 +17,10 @@ async function bootstrap() {
     jsonDocumentUrl: 'docs/json', // OpenAPI JSON crudo en /docs/json
   });
 
+  // Cierra el pool de Prisma (onModuleDestroy) al recibir SIGTERM/SIGINT,
+  // p. ej. en `docker stop` o al frenar los tests (ver ADR-0004).
+  app.enableShutdownHooks();
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

@@ -7,10 +7,11 @@ import { QuotesModule } from './modules/quotes/quotes.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { StatusHistoryModule } from './modules/status-history/status-history.module';
 import { UsersModule } from './modules/users/users.module';
-import { PrismaService } from './prisma/prisma.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     DossierModule,
     QualityModule,
     QuotesModule,
@@ -19,6 +20,6 @@ import { PrismaService } from './prisma/prisma.module';
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService],
 })
 export class AppModule {}
