@@ -228,11 +228,16 @@ su propio ADR o README.
 
 ## Action Items
 
-1. [ ] Agregar Prisma al `apps/backend` y traducir el ERD a
-       `schema.prisma`.
-2. [ ] Agregar `docker-compose.yml` con PostgreSQL para desarrollo local
-       y documentarlo en `apps/backend/README.md`.
-3. [ ] Crear el `PrismaModule` / `PrismaService` global en NestJS.
-4. [ ] Inicializar `apps/frontend` con React 19 + Vite.
+1. [x] Agregar Prisma al `apps/backend` y traducir el ERD a
+       `schema.prisma` — 10 entidades, enums de estado, FKs con
+       `onDelete: Restrict`, índices para el dossier y el conteo de
+       reprocesos. Migración inicial aplicada.
+2. [x] Agregar `compose.yml` con PostgreSQL para desarrollo local
+       (Postgres 16, puerto 5433) y documentarlo en
+       `apps/backend/README.md`, con `.env.example`.
+3. [x] Crear el `PrismaModule` / `PrismaService` global en NestJS —
+       `src/prisma/`, con el driver adapter `@prisma/adapter-pg`
+       (Prisma 7 ya no admite `url` en `schema.prisma`).
+4. [x] Inicializar `apps/frontend` con React 19 + Vite.
 5. [ ] Crear el ADR del proveedor de object storage cuando se decida el
        despliegue.

@@ -45,12 +45,15 @@ apps/backend/
 │   ├── schema.prisma            # ERD completo — fuente de verdad (ADR-0004)
 │   └── migrations/
 ├── src/
-│   ├── main.ts
-│   ├── app.module.ts            # importa los módulos de feature + PrismaModule
+│   ├── main.ts                  # bootstrap + enableShutdownHooks() (cierre limpio del pool)
+│   ├── app.module.ts            # ConfigModule.forRoot (global) + PrismaModule + módulos de feature
+│   │
+│   ├── config/
+│   │   └── env.validation.ts    # valida DATABASE_URL / PORT / NODE_ENV al arrancar (fail-fast)
 │   │
 │   ├── prisma/                  # infraestructura — sin lógica de negocio
-│   │   ├── prisma.module.ts     # @Global
-│   │   └── prisma.service.ts
+│   │   ├── prisma.module.ts     # @Global — provee y exporta PrismaService
+│   │   └── prisma.service.ts    # onModuleInit: $connect · onModuleDestroy: $disconnect
 │   │
 │   ├── modules/
 │   │   ├── quotes/                      # Comercial — CUSTOMER, REQUEST, QUOTE

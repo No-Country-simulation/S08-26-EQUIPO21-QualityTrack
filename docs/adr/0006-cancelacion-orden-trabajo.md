@@ -185,9 +185,16 @@ partido en dos expedientes sin ninguna conexión entre sí. Descartada.
        `in_quality_control` dispara algún proceso de facturación
        parcial — fuera de alcance de esta ADR, pero afecta si `reason`
        necesita estructura adicional.
-3. [ ] Agregar a `prisma/schema.prisma` las columnas
-       `WORK_ORDER.replaces_work_order_id` y `STATUS_HISTORY.reason`
-       cuando se implemente ADR-0004 (Prisma).
+3. [x] Agregar a `prisma/schema.prisma` las columnas
+       `WORK_ORDER.replaces_work_order_id` (FK autorreferencial,
+       `onDelete: Restrict`) y `STATUS_HISTORY.reason` (nullable).
+       Incluido el índice único parcial
+       `work_order (quote_id) WHERE replaces_work_order_id IS NULL` en
+       una migración editada a mano — ver
+       `apps/backend/prisma/migrations/README.md`. Falta la validación
+       en `status-history.service.ts` de que `reason` esté presente al
+       cancelar y de que `quote_id` repetido solo se permita con
+       `replaces_work_order_id` no nulo (cuando se implemente el módulo).
 4. [ ] Actualizar `docs/backend-structure.md` si `status-history`
        necesita un método adicional (ej. `cancel()`) además de
        `transition()`, o si alcanza con pasarle `WorkOrderEvent.Cancel`
