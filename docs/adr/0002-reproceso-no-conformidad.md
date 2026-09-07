@@ -2,7 +2,7 @@
 
 **Estado:** Aceptada
 **Fecha:** 2026-09-04
-**Deciders:** Backend (validar con Calidad y Planta en Semana 1)
+**Deciders:** Team
 
 ## Contexto
 
@@ -16,6 +16,15 @@ cierra esa OT y se genera una nueva para la pieza corregida?
 `nonconforming` transiciona de vuelta a `in_production` sobre la misma
 `WORK_ORDER`. No se crea una OT nueva.
 
+El ciclo de reproceso tiene un límite de **3 vueltas** sobre la misma
+OT: una pieza puede pasar por control de calidad y volver a producción
+hasta 3 veces. A partir de la cuarta no conformidad, la OT no vuelve a
+producción — se cierra el ciclo y hay que crear una `WORK_ORDER` nueva
+para refabricar la pieza desde cero. El límite se valida en el código
+de transición de estados (contando las filas de `STATUS_HISTORY` con
+`new_status = nonconforming` para esa OT); la transición
+`nonconforming → in_production` se rechaza si ya hubo 3.
+
 ```mermaid
 stateDiagram-v2
     [*] --> created
@@ -24,9 +33,13 @@ stateDiagram-v2
     in_production --> in_quality_control
     in_quality_control --> delivered
     in_quality_control --> nonconforming
-    nonconforming --> in_production
+    nonconforming --> in_production : hasta 3 veces
     delivered --> [*]
 ```
+
+> El ciclo `in_production ↔ in_quality_control / nonconforming` admite
+> como máximo 3 vueltas sobre la misma OT. A partir de ahí se requiere
+> una `WORK_ORDER` nueva.
 
 ## Opciones consideradas
 
@@ -65,7 +78,8 @@ genera como máximo una `WORK_ORDER`.
 
 **Cons:** el código de transición de estados debe permitir
 explícitamente el ciclo `in_quality_control → nonconforming →
-in_production`, en vez de validar un flujo estrictamente lineal.
+in_production`, en vez de validar un flujo estrictamente lineal, y
+además contar las vueltas ya dadas para cortar en 3.
 
 ## Consecuencias
 
@@ -76,11 +90,19 @@ in_production`, en vez de validar un flujo estrictamente lineal.
   y en `STATUS_HISTORY` — nunca se sobrescribe el anterior.
 - El endpoint `GET /work-orders/:id/dossier` debe mostrar el historial
   completo de inspecciones, no solo la más reciente.
+- El ciclo de reproceso está acotado a 3 vueltas por OT. La cuarta no
+  conformidad no habilita `nonconforming → in_production`: la pieza se
+  refabrica en una `WORK_ORDER` nueva. El conteo se deriva de
+  `STATUS_HISTORY` (filas con `new_status = nonconforming` para esa OT),
+  no de un contador redundante en `WORK_ORDER`.
 
 ## Action Items
 
-1. [ ] Validar con Calidad y Planta que reprocesar sobre la misma OT es
-       operativamente correcto (por ejemplo, si en la práctica alguna
-       vez se necesita refabricar la pieza desde cero con una OT nueva).
-2. [ ] Definir si conviene un límite de ciclos de reproceso para el MVP,
-       o si queda sin límite por ahora.
+1. [x] Validar con Calidad y Planta que reprocesar sobre la misma OT es
+       operativamente correcto — confirmado. Hasta 3 reprocesos se
+       hacen sobre la misma OT; a partir de la cuarta no conformidad se
+       refabrica la pieza desde cero con una `WORK_ORDER` nueva.
+2. [x] Definir si conviene un límite de ciclos de reproceso para el MVP
+       — sí: 3 vueltas por OT. La transición `nonconforming →
+ in_production` se rechaza si ya hubo 3 registros `nonconforming`
+       en `STATUS_HISTORY` para esa OT.

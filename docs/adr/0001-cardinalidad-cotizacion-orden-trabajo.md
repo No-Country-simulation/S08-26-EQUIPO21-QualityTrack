@@ -59,8 +59,10 @@ cotizar, lo cual contradice el flujo de aprobación real.
 
 ## Action Items
 
-1. [ ] Validar este modelo con el resto del equipo en la reunión de
+1. [x] Validar este modelo con el resto del equipo en la reunión de
        Semana 1.
-2. [ ] Definir la máquina de estados completa de la OT (transiciones
+2. [x] Definir la máquina de estados completa de la OT (transiciones
        válidas) — ver `docs/architecture.md`.
-3. [ ] Crear ADR-0002 cuando se decida el motor de base de datos.
+3. [x] Registrar en un ADR posterior la decisión del motor de base de
+       datos — quedó en ADR-0004 (stack tecnológico); ADR-0002 se usó
+       para la decisión de reproceso de no conformidad.
