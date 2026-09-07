@@ -1,9 +1,10 @@
 ---
-name: 'Caso de Prueba'
+name: '🧪 Caso de Prueba'
 about: Plantilla oficial de QA con categorías personalizadas.
 title: '[TEST] '
 labels: qa, test-case
 type: Task
+assignees: ['victoriadelgiovine']
 projects: ['No-Country-simulation/497']
 ---
 
