@@ -1,0 +1,257 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // La URL de conexión vive en prisma7.config.ts (datasource.url) y en el
+  // PrismaService vía el driver adapter -- Prisma 7 ya no admite `url` acá.
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+// Solo QUOTE.status y WORK_ORDER.status son enum acá: son los únicos dos campos
+// de estado que docs/architecture.md fija con una tabla de valores decidida.
+// operation.status, quality_control.result y document.type siguen como String
+// porque todavía no hay una ADR que cierre su enum -- tratarlos como enum acá
+// sería inventar una decisión que el equipo no tomó.
+
+enum QuoteStatus {
+  pending_approval
+  approved
+  rejected
+
+  @@map("quote_status")
+}
+
+enum WorkOrderStatus {
+  created
+  routed
+  in_production
+  in_quality_control
+  delivered
+  nonconforming
+  cancelled
+
+  @@map("work_order_status")
+}
+
+// -----------------------------------------------------------------------------
+// CUSTOMER
+// -----------------------------------------------------------------------------
+
+model Customer {
+  id    String @id @default(uuid())
+  name  String
+  taxId String @map("tax_id")
+
+  requests Request[]
+
+  // taxId identifica al cliente ante AFIP: no puede haber dos clientes con
+  // el mismo CUIT/CUIL.
+  @@unique([taxId])
+  @@map("customer")
+}
+
+// -----------------------------------------------------------------------------
+// REQUEST -- ver ADR-0003: entidad propia entre CUSTOMER y QUOTE. El cliente se
+// alcanza vía acá; QUOTE no repite customer_id.
+// -----------------------------------------------------------------------------
+
+model Request {
+  id          String   @id @default(uuid())
+  customerId  String   @map("customer_id")
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quote    Quote?
+
+  @@index([customerId])
+  @@map("request")
+}
+
+// -----------------------------------------------------------------------------
+// QUOTE
+// -----------------------------------------------------------------------------
+
+model Quote {
+  id        String      @id @default(uuid())
+  requestId String      @unique @map("request_id")
+  status    QuoteStatus
+  amount    Decimal     @db.Decimal(12, 2)
+  // `amount` es Decimal, no Float como dice literalmente el ERD de
+  // docs/architecture.md: Float pierde precisión en cálculos monetarios.
+  // Es la única desviación deliberada del tipo que figura en el ERD.
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  // `status` de la cotización muta (pending_approval -> approved / rejected):
+  // updatedAt deja registrada la fecha del último cambio sin necesitar una
+  // tabla de historial propia (la cotización no es la entidad trazable, la OT sí).
+
+  request    Request     @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  workOrders WorkOrder[]
+  // Plural, no WorkOrder? -- ver la nota en WorkOrder.quoteId sobre por qué
+  // esta relación no lleva @unique de por medio.
+
+  @@map("quote")
+}
+
+// -----------------------------------------------------------------------------
+// WORK_ORDER
+// -----------------------------------------------------------------------------
+
+model WorkOrder {
+  id                  String          @id @default(uuid())
+  quoteId             String          @map("quote_id")
+  status              WorkOrderStatus
+  createdAt           DateTime        @default(now()) @map("created_at")
+  replacesWorkOrderId String?         @unique @map("replaces_work_order_id")
+
+  quote           Quote            @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  replaces        WorkOrder?       @relation("WorkOrderReplaces", fields: [replacesWorkOrderId], references: [id], onDelete: Restrict)
+  replacedBy      WorkOrder?       @relation("WorkOrderReplaces")
+  routeSheets     RouteSheet[]
+  qualityControls QualityControl[]
+  documents       Document[]
+  statusHistory   StatusHistory[]
+
+  // NOTA (ADR-0001 + ADR-0006): quoteId NO lleva @unique. La regla general
+  // sigue siendo "una QUOTE, como máximo, una WORK_ORDER original" (ADR-0001),
+  // pero ADR-0006 permite repetir quoteId cuando replacesWorkOrderId no es
+  // nulo (OT de refabricación tras agotar los 3 reprocesos). Un @unique liso
+  // acá rompería ese caso legítimo. El índice único parcial que sí protege
+  // la regla ("una sola OT original por cotización") se agrega en una
+  // migración editada a mano -- ver prisma/migrations/README.md:
+  //   CREATE UNIQUE INDEX work_order_quote_id_original_key
+  //     ON work_order (quote_id) WHERE replaces_work_order_id IS NULL;
+
+  @@index([quoteId])
+  @@map("work_order")
+}
+
+// -----------------------------------------------------------------------------
+// ROUTE_SHEET
+// -----------------------------------------------------------------------------
+
+model RouteSheet {
+  id          String @id @default(uuid())
+  workOrderId String @map("work_order_id")
+  sequence    Int
+
+  workOrder  WorkOrder   @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  operations Operation[]
+
+  @@index([workOrderId])
+  @@map("route_sheet")
+}
+
+// -----------------------------------------------------------------------------
+// OPERATION
+// -----------------------------------------------------------------------------
+
+model Operation {
+  id           String   @id @default(uuid())
+  routeSheetId String   @map("route_sheet_id")
+  type         String
+  status       String
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  // `status` de la operación muta a medida que Planta la ejecuta (épica 6):
+  // updatedAt marca el último cambio. El detalle cronológico fino
+  // (inicio/fin, quién) se decidirá si la épica 6 lo exige.
+
+  routeSheet RouteSheet @relation(fields: [routeSheetId], references: [id], onDelete: Restrict)
+
+  @@index([routeSheetId])
+  @@map("operation")
+}
+
+// -----------------------------------------------------------------------------
+// QUALITY_CONTROL
+// -----------------------------------------------------------------------------
+
+model QualityControl {
+  id              String   @id @default(uuid())
+  workOrderId     String   @map("work_order_id")
+  result          String
+  isNonconforming Boolean  @map("is_nonconforming")
+  inspectedAt     DateTime @default(now()) @map("inspected_at")
+  // Una OT puede tener varias inspecciones por los reprocesos (ADR-0002).
+  // inspectedAt permite ordenarlas y mostrar "qué falló la vez anterior"
+  // (necesidad de Calidad, ver ux-research-brief.md).
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+
+  @@index([workOrderId])
+  @@map("quality_control")
+}
+
+// -----------------------------------------------------------------------------
+// DOCUMENT
+// -----------------------------------------------------------------------------
+
+model Document {
+  id          String   @id @default(uuid())
+  workOrderId String   @map("work_order_id")
+  type        String
+  url         String
+  // `url` es la clave / URL en el object storage S3-compatible (ADR-0004).
+  // El binario nunca se guarda acá.
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+
+  @@index([workOrderId])
+  @@map("document")
+}
+
+// -----------------------------------------------------------------------------
+// STATUS_HISTORY -- ver "Por qué STATUS_HISTORY es la tabla central" en
+// docs/architecture.md, ADR-0005 (único módulo que escribe acá) y ADR-0006
+// (columna `reason`).
+// -----------------------------------------------------------------------------
+
+model StatusHistory {
+  id             String          @id @default(uuid())
+  workOrderId    String          @map("work_order_id")
+  userId         String          @map("user_id")
+  previousStatus WorkOrderStatus @map("previous_status")
+  newStatus      WorkOrderStatus @map("new_status")
+  changedAt      DateTime        @default(now()) @map("changed_at")
+  reason         String?
+
+  // Append-only: nunca se hace UPDATE ni DELETE sobre esta tabla, ni en
+  // cascada. onDelete: Restrict impide borrar una OT o un usuario que
+  // tenga historial -- en este dominio nada se borra de verdad.
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  user      AppUser   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // El expediente único (dossier) lee el historial de una OT en orden
+  // cronológico -> índice compuesto por (workOrderId, changedAt).
+  @@index([workOrderId, changedAt])
+  // El límite de 3 reprocesos (ADR-0002) cuenta filas nonconforming de
+  // una OT -> índice por (workOrderId, newStatus).
+  @@index([workOrderId, newStatus])
+  @@map("status_history")
+}
+
+// -----------------------------------------------------------------------------
+// APP_USER -- no "User": palabra reservada en PostgreSQL y en el estándar SQL.
+// -----------------------------------------------------------------------------
+
+model AppUser {
+  id   String @id @default(uuid())
+  name String
+  role String
+
+  statusHistory StatusHistory[]
+
+  @@map("app_user")
+}
