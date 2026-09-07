@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { validate } from './config/env.validation';
 import { DossierModule } from './modules/dossier/dossier.module';
 import { QualityModule } from './modules/quality/quality.module';
 import { QuotesModule } from './modules/quotes/quotes.module';
@@ -11,6 +13,9 @@ import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
+    // Carga apps/backend/.env y valida las variables antes del bootstrap.
+    // isGlobal: no hace falta reimportar ConfigModule en cada módulo.
+    ConfigModule.forRoot({ isGlobal: true, cache: true, validate }),
     PrismaModule,
     DossierModule,
     QualityModule,

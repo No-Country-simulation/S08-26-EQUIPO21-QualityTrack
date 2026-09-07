@@ -1,6 +1,8 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { EnvVars } from './config/env.validation';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +23,7 @@ async function bootstrap() {
   // p. ej. en `docker stop` o al frenar los tests (ver ADR-0004).
   app.enableShutdownHooks();
 
-  await app.listen(process.env.PORT ?? 3000);
+  const configService = app.get(ConfigService<EnvVars, true>);
+  await app.listen(configService.get('PORT', { infer: true }));
 }
 bootstrap();
