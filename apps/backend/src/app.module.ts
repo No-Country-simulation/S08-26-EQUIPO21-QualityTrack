@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { validate } from './config/env.validation';
 import { DossierModule } from './modules/dossier/dossier.module';
+import { HealthModule } from './modules/health/health.module';
 import { QualityModule } from './modules/quality/quality.module';
 import { QuotesModule } from './modules/quotes/quotes.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
@@ -17,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
     // isGlobal: no hace falta reimportar ConfigModule en cada módulo.
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate }),
     PrismaModule,
+    HealthModule,
     DossierModule,
     QualityModule,
     QuotesModule,
@@ -24,7 +24,7 @@ import { PrismaModule } from './prisma/prisma.module';
     StatusHistoryModule,
     UsersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
