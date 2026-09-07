@@ -1,9 +1,10 @@
 ---
-name: 'Épica & Historia de Usuario - QA Context'
+name: '🎯 Épica & Historia de Usuario - QA Context'
 about: Documento raíz para definir la Épica, la Historia de Usuario y sus Criterios de Aceptación en formato Gherkin.
 title: '[EPIC/US] '
 labels: qa, epic-context, user-story
 type: Epic
+assignees: ['victoriadelgiovine']
 projects: ['No-Country-simulation/497']
 ---
 
