@@ -1,4 +1,4 @@
-import { RequestMethod } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -11,6 +11,19 @@ async function bootstrap() {
   // Cierra el pool de Prisma (onModuleDestroy) al recibir SIGTERM/SIGINT,
   // p. ej. en `docker stop` o al frenar los tests (ver ADR-0004).
   app.enableShutdownHooks();
+
+  // Validación de DTOs con class-validator en toda la API:
+  //  - whitelist: descarta propiedades del body sin decorador de validación.
+  //  - forbidNonWhitelisted: además, rechaza el request si trae alguna.
+  //  - transform: instancia el DTO como clase y castea tipos primitivos
+  //    (p. ej. params de query string a number) según los tipos declarados.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Toda la API cuelga de /api/v1, salvo /health: los orquestadores
   // (Docker healthcheck, load balancer) lo esperan en una ruta fija que
