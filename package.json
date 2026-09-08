@@ -8,6 +8,8 @@
     "dev": "pnpm --parallel --filter backend --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
     "lint:frontend": "pnpm --filter frontend lint",
     "build:frontend": "pnpm --filter frontend build",
     "prepare": "husky",
