@@ -48,15 +48,29 @@ enum WorkOrderStatus {
 // -----------------------------------------------------------------------------
 
 model Customer {
-  id    String @id @default(uuid())
-  name  String
-  taxId String @map("tax_id")
+  id         String    @id @default(uuid())
+  name       String
+  taxId      String    @map("tax_id")
+  email      String
+  phone      String?
+  address    String?
+  archivedAt DateTime? @map("archived_at")
 
   requests Request[]
 
-  // taxId identifica al cliente ante AFIP: no puede haber dos clientes con
-  // el mismo CUIT/CUIL.
+  // taxId es el identificador tributario del cliente (CUIT en Argentina, NIT
+  // en Colombia, NIF/CIF en España, RFC en México...): un string opaco, sin
+  // validación de formato por país. Es el ÚNICO identificador único del
+  // cliente (ADR-0007, ADR-0008).
   @@unique([taxId])
+  // email es obligatorio: es el canal de contacto que el flujo necesita
+  // garantizado (ADR-0008). NO es único -- dos áreas de un mismo cliente
+  // pueden compartir correo. phone y address son opcionales; address es
+  // texto libre de una línea, sin desglose calle/ciudad/país para el MVP.
+  //
+  // archivedAt: un CUSTOMER no se borra nunca, se archiva (ADR-0007).
+  // NULL => activo; con fecha => archivado (no aparece en listados por
+  // defecto, no acepta REQUEST nuevas; su historial queda intacto).
   @@map("customer")
 }
 
