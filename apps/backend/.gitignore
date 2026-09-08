@@ -4,6 +4,9 @@ node_modules
 
 /src/generated/prisma
 
+# Vitest cache
+.vitest/
+
 
 # AI Agents
 .agents/

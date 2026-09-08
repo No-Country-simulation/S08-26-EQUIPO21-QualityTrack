@@ -11,12 +11,23 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
-    "types": ["node", "jest"],
+    "types": ["node", "vitest/globals"],
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
-    "strictPropertyInitialization": false
-  }
+    "strictPropertyInitialization": false,
+    // Este tsconfig es solo para type-check (`tsc --noEmit`) y para el
+    // editor. La compilación a dist/ la hace `nest build` con
+    // tsconfig.build.json, que reactiva la emisión con `noEmit: false`.
+    // `noEmit` acá evita que un `tsc -p tsconfig.json` a mano ensucie
+    // src/ y test/ con archivos .js.
+    "noEmit": true
+  },
+  // Type-check de todo el paquete: código fuente, specs y las configs de
+  // Vitest. `rootDir` vive solo en tsconfig.build.json (la compilación a
+  // dist/ solo toma src/); acá no se pone para no excluir test/ ni las
+  // configs de la raíz del type-check.
+  "include": ["src", "test", "*.mts", "*.ts"]
 }

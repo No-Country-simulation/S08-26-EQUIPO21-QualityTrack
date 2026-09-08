@@ -26,6 +26,10 @@ erDiagram
         string id PK
         string name
         string tax_id
+        string email
+        string phone "nullable"
+        string address "nullable"
+        string archived_at "nullable"
     }
     REQUEST {
         string id PK
@@ -96,6 +100,11 @@ alcanza vía `request_id` (ver ADR-0003).
 `WORK_ORDER.replaces_work_order_id` es una autorreferencia opcional:
 solo se completa cuando la OT es una refabricación que reemplaza a una
 OT cancelada por agotar el límite de reprocesos (ver ADR-0006).
+
+`CUSTOMER.email` es obligatorio (canal de contacto garantizado) pero no
+único; el único identificador único del cliente es `tax_id`.
+`CUSTOMER.archived_at` marca a un cliente archivado — no se borra, se
+archiva (ver ADR-0007 y ADR-0008).
 
 ## Por qué STATUS_HISTORY es la tabla central
 
