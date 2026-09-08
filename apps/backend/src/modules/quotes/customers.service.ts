@@ -15,7 +15,9 @@ import type { Customer } from '../../generated/prisma/client';
  *
  * `taxId` es el único identificador único a nivel dominio (ADR-0007):
  * el intento de crear o mover un cliente a un `taxId` ya usado se
- * traduce a 409, no se deja propagar el error P2002 de Prisma.
+ * traduce a 409. El pre-check de acá da el mensaje temprano en el caso
+ * normal; la garantía ante condiciones de carrera es el `@@unique` de
+ * la BD, que `CustomersRepository` traduce de P2002 a 409.
  *
  * Un cliente no se borra: se archiva (ADR-0007). `archive()` /
  * `unarchive()` son idempotentes.

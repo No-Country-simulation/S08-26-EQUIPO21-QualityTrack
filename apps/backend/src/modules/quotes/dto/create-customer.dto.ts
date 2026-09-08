@@ -39,6 +39,7 @@ export class CreateCustomerDto {
 
   @ApiProperty({ description: 'Correo de contacto (obligatorio, no único)' })
   @IsEmail()
+  @IsNotEmpty()
   @MaxLength(320)
   email!: string;
 
