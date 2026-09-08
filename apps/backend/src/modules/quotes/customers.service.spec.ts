@@ -1,6 +1,6 @@
-import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import type { Mocked } from 'vitest';
 import { CustomersService } from './customers.service';
 import { CustomersRepository } from './customers.repository';
 import type { Customer } from '../../generated/prisma/client';
@@ -18,15 +18,15 @@ const buildCustomer = (over: Partial<Customer> = {}): Customer => ({
 
 describe('CustomersService', () => {
   let service: CustomersService;
-  let repo: jest.Mocked<CustomersRepository>;
+  let repo: Mocked<CustomersRepository>;
 
   beforeEach(async () => {
-    const repoMock: Partial<jest.Mocked<CustomersRepository>> = {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findById: jest.fn(),
-      findByTaxId: jest.fn(),
-      update: jest.fn(),
+    const repoMock: Partial<Mocked<CustomersRepository>> = {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findById: vi.fn(),
+      findByTaxId: vi.fn(),
+      update: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({

@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
@@ -6,12 +5,12 @@ import { CustomersService } from './customers.service';
 describe('CustomersController', () => {
   let controller: CustomersController;
   const service = {
-    create: jest.fn(),
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    archive: jest.fn(),
-    unarchive: jest.fn(),
+    create: vi.fn(),
+    findAll: vi.fn(),
+    findOne: vi.fn(),
+    update: vi.fn(),
+    archive: vi.fn(),
+    unarchive: vi.fn(),
   };
 
   beforeEach(async () => {
