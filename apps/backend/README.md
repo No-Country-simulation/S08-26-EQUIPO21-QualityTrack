@@ -114,8 +114,9 @@ pnpm --filter backend exec prisma studio
 | -------------------------------------- | -------------------------------------------- |
 | `pnpm dev:backend`                     | Arranca en watch mode                        |
 | `pnpm --filter backend build`          | Compila a `dist/`                            |
-| `pnpm --filter backend test`           | Tests unitarios (Jest)                       |
-| `pnpm --filter backend test:e2e`       | Tests end-to-end                             |
-| `pnpm --filter backend test:cov`       | Cobertura                                    |
+| `pnpm --filter backend test`           | Tests unitarios (Vitest, ver ADR-0009)       |
+| `pnpm --filter backend test:watch`     | Vitest en watch mode                         |
+| `pnpm --filter backend test:e2e`       | Tests end-to-end (necesitan Postgres arriba) |
+| `pnpm --filter backend test:cov`       | Cobertura (v8)                               |
 | `pnpm --filter backend lint`           | oxlint                                       |
 | `pnpm --filter backend prisma:migrate` | `prisma migrate dev` + generación del client |

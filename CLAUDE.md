@@ -56,7 +56,8 @@ Ver `CONTRIBUTING.md` para el detalle completo. Resumen:
 ## Stack
 
 Decisión completa y alternativas evaluadas en
-@docs/adr/0004-stack-tecnologico.md.
+@docs/adr/0004-stack-tecnologico.md. La fila de Testing quedó enmendada
+por @docs/adr/0009-vitest-runner-de-tests.md (Jest → Vitest).
 
 | Capa                   | Elección                                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------------------------- |
@@ -68,7 +69,7 @@ Decisión completa y alternativas evaluadas en
 | Motor de base de datos | PostgreSQL                                                                                        |
 | ORM                    | Prisma — `schema.prisma` es la fuente de verdad del modelo                                        |
 | Storage de archivos    | Object storage S3-compatible; solo la URL/clave va en `DOCUMENT.url` (proveedor pendiente de ADR) |
-| Testing                | Jest (unit + integración), Supertest para HTTP                                                    |
+| Testing                | Vitest (unit + integración), Supertest para HTTP (ver ADR-0009)                                   |
 | Lint / formato         | oxlint + Prettier                                                                                 |
 
 Los binarios (planos, certificados, PDF) nunca se guardan en la base de
@@ -90,7 +91,10 @@ con `status-history` como único módulo que escribe `STATUS_HISTORY` y
 `work_order.status`, @docs/adr/0006-cancelacion-orden-trabajo.md para
 la cancelación de una OT y el cierre del ciclo de reproceso agotado, y
 @docs/adr/0007-archivado-de-cliente.md para el archivado de un cliente
-(un `CUSTOMER` no se borra nunca, se archiva vía `archived_at`).
+(un `CUSTOMER` no se borra nunca, se archiva vía `archived_at`),
+@docs/adr/0008-email-cliente-obligatorio.md para el `email` obligatorio
+del cliente, y @docs/adr/0009-vitest-runner-de-tests.md para Vitest como
+runner de tests del backend (enmienda a ADR-0004).
 La estructura de carpetas de referencia está en
 @docs/backend-structure.md.
 

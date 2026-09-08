@@ -1,8 +1,15 @@
 # ADR-0004: Stack tecnológico del proyecto
 
-**Estado:** Aceptada
+**Estado:** Aceptada (enmendada por ADR-0009)
 **Fecha:** 2026-09-05
 **Deciders:** Backend
+
+> **Enmienda (2026-09-08, ADR-0009):** la fila de Testing pasó de "Jest"
+> a "Vitest". NestJS 12 y el cliente Prisma 7 son ESM puro, y Jest
+> necesitaba seis parches de configuración para cargarlos; Vitest los
+> ejecuta sin configuración extra y unifica el runner con el del
+> frontend. Supertest para HTTP no cambia. Ver
+> `docs/adr/0009-vitest-runner-de-tests.md`.
 
 ## Contexto
 
@@ -45,18 +52,18 @@ OPERATION`, más `QUALITY_CONTROL`, `DOCUMENT`, `STATUS_HISTORY`).
 
 ## Decisión
 
-| Capa                   | Elección                                              |
-| ---------------------- | ----------------------------------------------------- |
-| Lenguaje               | TypeScript (`strict`)                                 |
-| Runtime                | Node.js 24 LTS                                        |
-| Gestor de paquetes     | pnpm (workspaces / monorepo)                          |
-| Framework de API       | NestJS 12                                             |
-| Framework de frontend  | React 19 (Vite)                                       |
-| Motor de base de datos | PostgreSQL                                            |
-| ORM                    | Prisma                                                |
-| Storage de archivos    | Object storage (S3-compatible), URL en `DOCUMENT.url` |
-| Testing                | Jest (unit + integración), Supertest para HTTP        |
-| Lint / formato         | oxlint + Prettier                                     |
+| Capa                   | Elección                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| Lenguaje               | TypeScript (`strict`)                                                                |
+| Runtime                | Node.js 24 LTS                                                                       |
+| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                         |
+| Framework de API       | NestJS 12                                                                            |
+| Framework de frontend  | React 19 (Vite)                                                                      |
+| Motor de base de datos | PostgreSQL                                                                           |
+| ORM                    | Prisma                                                                               |
+| Storage de archivos    | Object storage (S3-compatible), URL en `DOCUMENT.url`                                |
+| Testing                | Vitest (unit + integración), Supertest para HTTP — enmendado por ADR-0009 (era Jest) |
+| Lint / formato         | oxlint + Prettier                                                                    |
 
 ### Motor de base de datos: PostgreSQL
 
