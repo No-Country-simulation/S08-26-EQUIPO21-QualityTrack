@@ -38,7 +38,6 @@ async function bootstrap() {
     .setDescription('Gestión y trazabilidad de Órdenes de Trabajo')
     .setVersion('0.1.0')
     .addBearerAuth() // para el JWT del módulo users (ADR-0005)
-    .addServer('/api/v1') // relativo: se resuelve contra el origin que sirve la doc
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
