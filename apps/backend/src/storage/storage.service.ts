@@ -97,9 +97,9 @@ export class StorageService implements OnModuleInit {
   }
 
   /**
-   * Borra un objeto. Reservado: en este dominio nada se borra (ADR-0007),
-   * el CRUD de documentos no lo expone en el MVP. Existe para
-   * completar la interfaz y para limpieza en tests.
+   * Borra un objeto. Reservado: en este dominio nada se borra, así que
+   * el CRUD de documentos del MVP no lo expone (ADR-0010). Existe para
+   * completar la interfaz S3 y para limpieza en los tests.
    */
   async deleteObject(key: string): Promise<void> {
     await this.client.send(
