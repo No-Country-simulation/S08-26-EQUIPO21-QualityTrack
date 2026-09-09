@@ -1,15 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { validate } from '../config/env.validation';
-import { StorageService } from './storage.service';
+import { validate } from '../src/config/env.validation';
+import { StorageService } from '../src/storage/storage.service';
 
 /**
  * Prueba de integración del object storage (AC3 de la issue #5): sube un
  * archivo al MinIO local, genera una URL firmada, descarga por esa URL y
  * verifica que el contenido vuelve intacto. Después limpia el objeto.
  *
- * Necesita el MinIO de `compose.yml` levantado (`docker compose up -d`)
- * y el bucket creado por `minio-setup`. Misma dependencia de infra que
+ * Vive en la suite e2e (`pnpm test:e2e`), no en los unit tests: necesita
+ * el MinIO de `compose.yml` levantado (`docker compose up -d`) y el
+ * bucket creado por `minio-setup`. Misma dependencia de infra que
  * `test/health.e2e-spec.ts` con Postgres.
  *
  * No mockea nada: el punto de esta prueba es confirmar que la
