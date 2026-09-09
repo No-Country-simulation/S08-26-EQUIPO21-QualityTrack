@@ -20,7 +20,7 @@ export class RequestEntity implements Request {
   @ApiProperty({ description: 'Descripción del trabajo solicitado.' })
   description!: string;
 
-  @ApiProperty({ format: 'date-time' })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 }
 
