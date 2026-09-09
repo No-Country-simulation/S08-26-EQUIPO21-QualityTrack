@@ -59,18 +59,18 @@ Decisión completa y alternativas evaluadas en
 @docs/adr/0004-stack-tecnologico.md. La fila de Testing quedó enmendada
 por @docs/adr/0009-vitest-runner-de-tests.md (Jest → Vitest).
 
-| Capa                   | Elección                                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------- |
-| Lenguaje               | TypeScript (`strict`)                                                                             |
-| Runtime                | Node.js 24 LTS                                                                                    |
-| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                                      |
-| Framework de API       | NestJS 12                                                                                         |
-| Framework de frontend  | React 19 (Vite)                                                                                   |
-| Motor de base de datos | PostgreSQL                                                                                        |
-| ORM                    | Prisma — `schema.prisma` es la fuente de verdad del modelo                                        |
-| Storage de archivos    | Object storage S3-compatible; solo la URL/clave va en `DOCUMENT.url` (proveedor pendiente de ADR) |
-| Testing                | Vitest (unit + integración), Supertest para HTTP (ver ADR-0009)                                   |
-| Lint / formato         | oxlint + Prettier                                                                                 |
+| Capa                   | Elección                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Lenguaje               | TypeScript (`strict`)                                                                                                           |
+| Runtime                | Node.js 24 LTS                                                                                                                  |
+| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                                                                    |
+| Framework de API       | NestJS 12                                                                                                                       |
+| Framework de frontend  | React 19 (Vite)                                                                                                                 |
+| Motor de base de datos | PostgreSQL                                                                                                                      |
+| ORM                    | Prisma — `schema.prisma` es la fuente de verdad del modelo                                                                      |
+| Storage de archivos    | Object storage S3-compatible: MinIO en dev local, Railway Storage Bucket en prod (ADR-0010); en `DOCUMENT.url` va la object key |
+| Testing                | Vitest (unit + integración), Supertest para HTTP (ver ADR-0009)                                                                 |
+| Lint / formato         | oxlint + Prettier                                                                                                               |
 
 Los binarios (planos, certificados, PDF) nunca se guardan en la base de
 datos — van a object storage y la BD guarda solo metadatos y la
@@ -93,8 +93,11 @@ la cancelación de una OT y el cierre del ciclo de reproceso agotado, y
 @docs/adr/0007-archivado-de-cliente.md para el archivado de un cliente
 (un `CUSTOMER` no se borra nunca, se archiva vía `archived_at`),
 @docs/adr/0008-email-cliente-obligatorio.md para el `email` obligatorio
-del cliente, y @docs/adr/0009-vitest-runner-de-tests.md para Vitest como
-runner de tests del backend (enmienda a ADR-0004).
+del cliente, @docs/adr/0009-vitest-runner-de-tests.md para Vitest como
+runner de tests del backend (enmienda a ADR-0004), y
+@docs/adr/0010-almacenamiento-de-documentos.md para el proveedor de
+object storage (MinIO en dev vía `compose.yml`, Railway Storage Bucket
+en prod; `DOCUMENT.url` guarda la object key, no una URL firmada).
 La estructura de carpetas de referencia está en
 @docs/backend-structure.md.
 

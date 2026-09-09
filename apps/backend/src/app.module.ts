@@ -9,6 +9,7 @@ import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { StatusHistoryModule } from './modules/status-history/status-history.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module';
     // isGlobal: no hace falta reimportar ConfigModule en cada módulo.
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate }),
     PrismaModule,
+    StorageModule,
     HealthModule,
     DossierModule,
     QualityModule,
