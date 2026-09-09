@@ -37,10 +37,16 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      # /minio/health/ready es el endpoint oficial de readiness de MinIO
+      # (object layer inicializado, no solo el proceso vivo). curl viene
+      # en la imagen minio/minio. Se prefiere a `mc ready local` porque
+      # no depende de que el binario mc siga incluido en la imagen.
+      test:
+        ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # Crea el bucket 'qualitytrack' al levantar el stack y termina.
   # Idempotente: si el bucket ya existe, no falla.
