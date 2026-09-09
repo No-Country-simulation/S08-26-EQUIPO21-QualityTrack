@@ -71,7 +71,7 @@ erDiagram
         string id PK
         string work_order_id FK
         string type
-        string url
+        string url "object key en el storage, no una URL firmada"
     }
     STATUS_HISTORY {
         string id PK
@@ -105,6 +105,11 @@ OT cancelada por agotar el límite de reprocesos (ver ADR-0006).
 único; el único identificador único del cliente es `tax_id`.
 `CUSTOMER.archived_at` marca a un cliente archivado — no se borra, se
 archiva (ver ADR-0007 y ADR-0008).
+
+`DOCUMENT.url` guarda la **object key** del archivo en un object storage
+S3-compatible (MinIO en dev, Railway Storage Bucket en prod), no una URL
+firmada: las presigned URLs expiran y se generan on-demand al descargar
+(ver ADR-0010). El binario nunca vive en la base.
 
 ## Por qué STATUS_HISTORY es la tabla central
 

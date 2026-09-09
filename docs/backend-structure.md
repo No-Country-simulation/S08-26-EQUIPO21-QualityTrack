@@ -30,7 +30,11 @@ negociables:
 5. `quality` no tiene estado propio: registra la inspección y, si es no
    conforme, llama a `transition()` para mover el `WORK_ORDER` (ADR-0002).
 6. `GET /work-orders/:id/dossier` se resuelve en el módulo `dossier` en
-   una sola respuesta (regla de `CLAUDE.md`). `dossier` solo lee.
+   una sola respuesta (regla de `CLAUDE.md`). `dossier` compone el
+   expediente (lectura) y además administra el alta de `DOCUMENT`
+   (metadatos + subida del binario al object storage, ADR-0010) — una
+   escritura acotada a esa entidad. No toca `work_order.status` ni
+   `status_history`.
 
 ## Estructura de referencia
 
@@ -49,19 +53,24 @@ apps/backend/
 │   ├── app.module.ts            # ConfigModule.forRoot (global) + PrismaModule + módulos de feature
 │   │
 │   ├── config/
-│   │   └── env.validation.ts    # valida DATABASE_URL / PORT / NODE_ENV al arrancar (fail-fast)
+│   │   └── env.validation.ts    # valida DATABASE_URL / PORT / NODE_ENV / STORAGE_* al arrancar (fail-fast)
 │   │
 │   ├── prisma/                  # infraestructura — sin lógica de negocio
 │   │   ├── prisma.module.ts     # @Global — provee y exporta PrismaService
 │   │   └── prisma.service.ts    # onModuleInit: $connect · onModuleDestroy: $disconnect
 │   │
+│   ├── storage/                 # infraestructura — object storage S3-compatible (ADR-0010)
+│   │   ├── storage.module.ts    # @Global — provee y exporta StorageService
+│   │   └── storage.service.ts   # wrapper de @aws-sdk/client-s3: putObject, getSignedDownloadUrl, deleteObject
+│   │
 │   ├── modules/
-│   │   ├── quotes/                      # Comercial — CUSTOMER, REQUEST, QUOTE
+│   │   ├── quotes/                      # Comercial — CUSTOMER, REQUEST, QUOTE (un módulo, ADR-0005)
 │   │   │   ├── quotes.module.ts
-│   │   │   ├── quotes.controller.ts     # solicitudes, cotizaciones, aprobación
-│   │   │   ├── quotes.service.ts        # al aprobar: llama work-orders para crear la OT
-│   │   │   ├── quotes.repository.ts
-│   │   │   └── dto/
+│   │   │   ├── customers.{controller,service,repository}.ts   # CRUD de CUSTOMER + archivar/reactivar (ADR-0007)
+│   │   │   ├── requests.{controller,service,repository}.ts    # alta/consulta de REQUEST; guard de cliente archivado (ADR-0003)
+│   │   │   ├── quotes.{controller,service}.ts                 # cotización y aprobación — se registran cuando tengan lógica real
+│   │   │   ├── dto/                     # create-customer, update-customer, create-request
+│   │   │   └── entities/                # customer.entity, request.entity (+ request-with-customer para AC3)
 │   │   │
 │   │   ├── work-orders/                 # Producción — WORK_ORDER, ROUTE_SHEET, OPERATION
 │   │   │   ├── work-orders.module.ts
@@ -86,11 +95,13 @@ apps/backend/
 │   │   │   ├── work-order-state-machine.ts # transiciones legales + límite de 3 reprocesos (ADR-0002)
 │   │   │   └── work-order-event.ts         # enum de eventos: route, sendToQC, markNonconforming, ...
 │   │   │
-│   │   ├── dossier/                     # Trazabilidad (lectura) — DOCUMENT + expediente
+│   │   ├── dossier/                     # Trazabilidad — expediente (lectura) + alta de DOCUMENT
 │   │   │   ├── dossier.module.ts
 │   │   │   ├── dossier.controller.ts    # GET /work-orders/:id/dossier
-│   │   │   ├── dossier.service.ts       # compone la respuesta única; SOLO lee
-│   │   │   └── documents.controller.ts  # alta / listado de documentos de una OT
+│   │   │   ├── dossier.service.ts       # compone la respuesta única; solo lee
+│   │   │   ├── documents.controller.ts  # POST alta · GET listado · GET /documents/:id/download (redirect a presigned URL)
+│   │   │   ├── documents.service.ts     # metadatos (Prisma) + binario (StorageService); guarda la object key en Document.url
+│   │   │   └── dto/                      # upload DTO: límite de tamaño, whitelist de content-type
 │   │   │
 │   │   └── users/                       # Identidad — APP_USER
 │   │       ├── users.module.ts
@@ -119,12 +130,13 @@ apps/backend/
 No hay event bus. Los módulos colaboran por **inyección de dependencias
 y llamada de método directa**:
 
-| Necesidad                                                       | Cómo se resuelve                                                                                                                                            |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quotes` aprueba una cotización → hay que crear la `WORK_ORDER` | `QuotesService` inyecta `WorkOrdersService` y llama `createFromQuote(quoteId)`.                                                                             |
-| `work-orders` / `quality` cambian el estado de una OT           | Inyectan `StatusHistoryService` y llaman `transition(workOrderId, event, userId)`. Nunca tocan `status` a mano.                                             |
-| `quality` marca una inspección no conforme                      | `QualityService` registra el `QUALITY_CONTROL` y llama `transition(id, WorkOrderEvent.MarkNonconforming, userId)`.                                          |
-| `dossier` arma el expediente                                    | `DossierService` inyecta los repositorios/servicios de lectura de `quotes`, `work-orders`, `quality` y `status-history` y compone la respuesta. No escribe. |
+| Necesidad                                                       | Cómo se resuelve                                                                                                                                                                                                            |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quotes` aprueba una cotización → hay que crear la `WORK_ORDER` | `QuotesService` inyecta `WorkOrdersService` y llama `createFromQuote(quoteId)`.                                                                                                                                             |
+| `work-orders` / `quality` cambian el estado de una OT           | Inyectan `StatusHistoryService` y llaman `transition(workOrderId, event, userId)`. Nunca tocan `status` a mano.                                                                                                             |
+| `quality` marca una inspección no conforme                      | `QualityService` registra el `QUALITY_CONTROL` y llama `transition(id, WorkOrderEvent.MarkNonconforming, userId)`.                                                                                                          |
+| `dossier` arma el expediente                                    | `DossierService` inyecta los repositorios/servicios de lectura de `quotes`, `work-orders`, `quality` y `status-history` y compone la respuesta. No escribe estado.                                                          |
+| `dossier` da de alta un documento de una OT                     | `DocumentsService` sube el binario con `StorageService` (`@aws-sdk/client-s3`) y persiste la fila `DOCUMENT` con la object key. Escritura acotada a `DOCUMENT`; no toca `work_order.status` ni `status_history` (ADR-0010). |
 
 Para evitar dependencias circulares entre `quotes` ↔ `work-orders` o
 `work-orders` ↔ `status-history`, cada módulo exporta solo el service

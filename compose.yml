@@ -17,5 +17,46 @@ services:
       timeout: 5s
       retries: 5
 
+  # Object storage S3-compatible para desarrollo local (ver ADR-0010).
+  # En producción esto es un Railway Storage Bucket; la app no distingue
+  # uno de otro, solo cambian las variables STORAGE_* del .env.
+  minio:
+    image: minio/minio:latest
+    container_name: qualitytrack-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      # Puertos del host desplazados (9100/9101) para no chocar con otros
+      # servicios que suelen ocupar 9000/9001 (portainer, túneles). Dentro
+      # de la red de compose, MinIO sigue escuchando en 9000/9001.
+      - "9100:9000"   # API S3 (STORAGE_ENDPOINT=http://localhost:9100)
+      - "9101:9001"   # consola web para inspeccionar los objetos a ojo
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Crea el bucket 'qualitytrack' al levantar el stack y termina.
+  # Idempotente: si el bucket ya existe, no falla.
+  minio-setup:
+    image: minio/mc:latest
+    container_name: qualitytrack-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minio minio12345 &&
+      mc mb --ignore-existing local/qualitytrack &&
+      echo 'Bucket qualitytrack listo.'
+      "
+
 volumes:
   postgres_data:
+  minio_data:

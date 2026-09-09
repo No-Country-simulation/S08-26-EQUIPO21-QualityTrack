@@ -1,7 +1,8 @@
 # QualityTrack — Backend
 
-API de QualityTrack. NestJS 12 + Prisma 7 + PostgreSQL (ver
-`docs/adr/0004-stack-tecnologico.md`).
+API de QualityTrack. NestJS 12 + Prisma 7 + PostgreSQL + object storage
+S3-compatible (ver `docs/adr/0004-stack-tecnologico.md` y
+`docs/adr/0010-almacenamiento-de-documentos.md`).
 
 La organización interna en módulos de feature está en
 `docs/adr/0005-organizacion-por-dominios.md` y `docs/backend-structure.md`.
@@ -10,7 +11,7 @@ La organización interna en módulos de feature está en
 
 - Node.js 24 LTS
 - pnpm (ver `packageManager` en el `package.json` raíz)
-- Docker (para el PostgreSQL de desarrollo)
+- Docker (para el PostgreSQL y el MinIO de desarrollo)
 
 ## Puesta en marcha
 
@@ -20,16 +21,19 @@ Desde la **raíz del repo**:
 # 1. Instalar dependencias de todo el monorepo
 pnpm install
 
-# 2. Levantar PostgreSQL (Postgres 16, puerto 5433 del host)
+# 2. Levantar la infra de desarrollo:
+#    - PostgreSQL 16 en el puerto 5433 del host
+#    - MinIO (object storage S3-compatible): API en :9100, consola en :9101
+#    - minio-setup crea el bucket 'qualitytrack' y termina
 docker compose up -d
 
 # 3. Configurar el entorno del backend
 cp apps/backend/.env.example apps/backend/.env
-#   Los valores por defecto ya coinciden con compose.yml; editar solo si
-#   se cambió el puerto o las credenciales. ConfigModule carga este .env
-#   y valida las variables al arrancar (ver "Variables de entorno"): si
-#   DATABASE_URL falta o está mal escrita, el bootstrap aborta con un
-#   mensaje claro.
+#   Los valores por defecto ya coinciden con compose.yml (Postgres y
+#   MinIO); editar solo si se cambió un puerto o unas credenciales.
+#   ConfigModule carga este .env y valida las variables al arrancar (ver
+#   "Variables de entorno"): si falta una obligatoria o está mal escrita,
+#   el bootstrap aborta con un mensaje claro.
 
 # 4. Aplicar las migraciones y generar el Prisma Client
 pnpm --filter backend prisma:migrate
@@ -46,11 +50,22 @@ pnpm dev:backend
 variable faltante o mal formada aborta el bootstrap con el detalle de
 qué falló — no un error opaco del driver más adelante.
 
-| Variable       | Obligatoria | Default       | Notas                                               |
-| -------------- | ----------- | ------------- | --------------------------------------------------- |
-| `DATABASE_URL` | Sí          | —             | Cadena PostgreSQL. Debe empezar con `postgresql://` |
-| `PORT`         | No          | `3000`        | Puerto HTTP de la API                               |
-| `NODE_ENV`     | No          | `development` | `development` \| `test` \| `production`             |
+| Variable                    | Obligatoria | Default       | Notas                                                                           |
+| --------------------------- | ----------- | ------------- | ------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Sí          | —             | Cadena PostgreSQL. Debe empezar con `postgresql://`                             |
+| `PORT`                      | No          | `3000`        | Puerto HTTP de la API                                                           |
+| `NODE_ENV`                  | No          | `development` | `development` \| `test` \| `production`                                         |
+| `STORAGE_ENDPOINT`          | Sí          | —             | Endpoint S3. Dev: `http://localhost:9100` (MinIO). Prod: `${{Bucket.ENDPOINT}}` |
+| `STORAGE_REGION`            | Sí          | —             | Región del bucket. Dev: `us-east-1`                                             |
+| `STORAGE_BUCKET`            | Sí          | —             | Nombre del bucket. Dev: `qualitytrack`                                          |
+| `STORAGE_ACCESS_KEY_ID`     | Sí          | —             | Credencial S3                                                                   |
+| `STORAGE_SECRET_ACCESS_KEY` | Sí          | —             | Credencial S3                                                                   |
+| `STORAGE_FORCE_PATH_STYLE`  | No          | `false`       | `true` para MinIO (path-style); `false`/ausente para Railway Buckets            |
+
+Las `STORAGE_*` configuran el object storage S3-compatible (ADR-0010):
+MinIO en dev local (contenedor de `compose.yml`), Railway Storage Bucket
+en producción. El código usa `@aws-sdk/client-s3` y no distingue uno de
+otro — solo cambian estas variables.
 
 El CLI de Prisma (`prisma migrate`, `prisma studio`) lee su propio
 `.env` vía `prisma7.config.ts` (`import 'dotenv/config'`), independiente
@@ -107,6 +122,27 @@ pnpm --filter backend exec prisma studio
 - `StatusHistory` es append-only (ADR-0005): solo el módulo
   `status-history` la escribe, en la misma transacción que
   `work_order.status`.
+- `Document.url` guarda la **object key** del archivo en el storage, no
+  una URL firmada (ADR-0010). La presigned URL de descarga se genera
+  on-demand.
+
+## Object storage
+
+Los binarios (planos, certificados, PDF) van a un object storage
+S3-compatible; en `Document` solo quedan los metadatos y la key (ADR-0010).
+
+### Configuración
+
+- **Dev local:** MinIO en `compose.yml` (raíz). API S3 en
+  `localhost:9100`, consola web en `localhost:9101`
+  (usuario/clave `minio` / `minio12345`). El servicio `minio-setup` crea
+  el bucket `qualitytrack` al levantar el stack.
+- **Producción:** Railway Storage Bucket vinculado al servicio backend;
+  las `STORAGE_*` se definen como referencias `${{Bucket.*}}`.
+- `src/storage/` expone un `StorageService` global (wrapper de
+  `@aws-sdk/client-s3`) — mismo patrón que `PrismaModule`.
+
+El código es idéntico en dev y prod: cambia solo el `.env`.
 
 ## Scripts
 

@@ -9,6 +9,14 @@ export interface EnvVars {
   DATABASE_URL: string;
   PORT: number;
   NODE_ENV: 'development' | 'test' | 'production';
+  // Object storage S3-compatible (ver ADR-0010). En dev apuntan al MinIO
+  // de compose.yml; en prod, al Railway Storage Bucket.
+  STORAGE_ENDPOINT: string;
+  STORAGE_REGION: string;
+  STORAGE_BUCKET: string;
+  STORAGE_ACCESS_KEY_ID: string;
+  STORAGE_SECRET_ACCESS_KEY: string;
+  STORAGE_FORCE_PATH_STYLE: boolean;
 }
 
 export function validate(
@@ -47,6 +55,44 @@ export function validate(
     );
   }
 
+  // Object storage: las cinco son obligatorias (ADR-0010). Sin ellas, el
+  // alta de documentos falla recién al primer upload, no al arrancar.
+  const storage: Record<string, string> = {};
+  for (const key of [
+    'STORAGE_ENDPOINT',
+    'STORAGE_REGION',
+    'STORAGE_BUCKET',
+    'STORAGE_ACCESS_KEY_ID',
+    'STORAGE_SECRET_ACCESS_KEY',
+  ] as const) {
+    const value = config[key];
+    if (value === undefined || value.length === 0) {
+      errors.push(
+        `${key} falta o está vacía. Copiá apps/backend/.env.example a ` +
+          'apps/backend/.env (ver ADR-0010 y apps/backend/README.md).',
+      );
+    } else {
+      storage[key] = value;
+    }
+  }
+
+  if (
+    config.STORAGE_ENDPOINT !== undefined &&
+    config.STORAGE_ENDPOINT.length > 0
+  ) {
+    if (!/^https?:\/\//.test(config.STORAGE_ENDPOINT)) {
+      errors.push(
+        `STORAGE_ENDPOINT debe empezar con http:// o https:// ` +
+          `(recibido: "${config.STORAGE_ENDPOINT}").`,
+      );
+    }
+  }
+
+  // Opcional: default false. Solo 'true' (case-insensitive) lo activa —
+  // necesario para MinIO, innecesario para Railway Buckets.
+  const forcePathStyle =
+    (config.STORAGE_FORCE_PATH_STYLE ?? 'false').toLowerCase() === 'true';
+
   if (errors.length > 0 || databaseUrl === undefined) {
     throw new Error(
       `Configuración de entorno inválida:\n  - ${errors.join('\n  - ')}`,
@@ -57,5 +103,11 @@ export function validate(
     DATABASE_URL: databaseUrl,
     PORT: port,
     NODE_ENV: nodeEnv as EnvVars['NODE_ENV'],
+    STORAGE_ENDPOINT: storage.STORAGE_ENDPOINT,
+    STORAGE_REGION: storage.STORAGE_REGION,
+    STORAGE_BUCKET: storage.STORAGE_BUCKET,
+    STORAGE_ACCESS_KEY_ID: storage.STORAGE_ACCESS_KEY_ID,
+    STORAGE_SECRET_ACCESS_KEY: storage.STORAGE_SECRET_ACCESS_KEY,
+    STORAGE_FORCE_PATH_STYLE: forcePathStyle,
   };
 }

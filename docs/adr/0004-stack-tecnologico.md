@@ -1,6 +1,6 @@
 # ADR-0004: Stack tecnológico del proyecto
 
-**Estado:** Aceptada (enmendada por ADR-0009)
+**Estado:** Aceptada (enmendada por ADR-0009; storage definido en ADR-0010)
 **Fecha:** 2026-09-05
 **Deciders:** Backend
 
@@ -52,18 +52,18 @@ OPERATION`, más `QUALITY_CONTROL`, `DOCUMENT`, `STATUS_HISTORY`).
 
 ## Decisión
 
-| Capa                   | Elección                                                                             |
-| ---------------------- | ------------------------------------------------------------------------------------ |
-| Lenguaje               | TypeScript (`strict`)                                                                |
-| Runtime                | Node.js 24 LTS                                                                       |
-| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                         |
-| Framework de API       | NestJS 12                                                                            |
-| Framework de frontend  | React 19 (Vite)                                                                      |
-| Motor de base de datos | PostgreSQL                                                                           |
-| ORM                    | Prisma                                                                               |
-| Storage de archivos    | Object storage (S3-compatible), URL en `DOCUMENT.url`                                |
-| Testing                | Vitest (unit + integración), Supertest para HTTP — enmendado por ADR-0009 (era Jest) |
-| Lint / formato         | oxlint + Prettier                                                                    |
+| Capa                   | Elección                                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Lenguaje               | TypeScript (`strict`)                                                                                                              |
+| Runtime                | Node.js 24 LTS                                                                                                                     |
+| Gestor de paquetes     | pnpm (workspaces / monorepo)                                                                                                       |
+| Framework de API       | NestJS 12                                                                                                                          |
+| Framework de frontend  | React 19 (Vite)                                                                                                                    |
+| Motor de base de datos | PostgreSQL                                                                                                                         |
+| ORM                    | Prisma                                                                                                                             |
+| Storage de archivos    | Object storage S3-compatible, object key en `DOCUMENT.url` — proveedor definido en ADR-0010 (MinIO en dev, Railway Bucket en prod) |
+| Testing                | Vitest (unit + integración), Supertest para HTTP — enmendado por ADR-0009 (era Jest)                                               |
+| Lint / formato         | oxlint + Prettier                                                                                                                  |
 
 ### Motor de base de datos: PostgreSQL
 
@@ -91,6 +91,11 @@ datos guarda solo metadatos y la clave/URL en `DOCUMENT.url`, tal como ya
 lo modela el ERD. El proveedor concreto (S3, R2, Supabase Storage, GCS,
 MinIO en local) se define en un ADR posterior según dónde se despliegue
 el sistema — no bloquea el setup.
+
+> **Resuelto en ADR-0010:** el despliegue es Railway. Storage con MinIO
+> en dev local (contenedor en `compose.yml`, mismo patrón que Postgres) y
+> Railway Storage Bucket en producción, ambos vía `@aws-sdk/client-s3`.
+> `DOCUMENT.url` guarda la object key, no una URL firmada.
 
 ## Opciones consideradas
 
@@ -228,8 +233,9 @@ su propio ADR o README.
   directo a esa primitiva.
 - Los reportes de agregación que no encajen en el query builder de Prisma
   usan `$queryRaw` con SQL parametrizado, coordinados con Data Analyst.
-- Queda pendiente un ADR para el proveedor de object storage, atado a la
-  decisión de despliegue.
+- ~~Queda pendiente un ADR para el proveedor de object storage, atado a
+  la decisión de despliegue.~~ Resuelto en ADR-0010 (MinIO en dev,
+  Railway Bucket en prod).
 - La sección **Stack** de `CLAUDE.md` se actualiza en el mismo PR que
   este ADR.
 
@@ -246,5 +252,7 @@ su propio ADR o README.
        `src/prisma/`, con el driver adapter `@prisma/adapter-pg`
        (Prisma 7 ya no admite `url` en `schema.prisma`).
 4. [x] Inicializar `apps/frontend` con React 19 + Vite.
-5. [ ] Crear el ADR del proveedor de object storage cuando se decida el
-       despliegue.
+5. [x] Crear el ADR del proveedor de object storage cuando se decida el
+       despliegue — ADR-0010: despliegue en Railway, storage con MinIO
+       en dev local (`compose.yml`) y Railway Storage Bucket en prod,
+       ambos vía `@aws-sdk/client-s3`.
