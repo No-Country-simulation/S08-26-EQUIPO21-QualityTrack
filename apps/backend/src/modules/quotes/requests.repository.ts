@@ -37,6 +37,11 @@ export class RequestsRepository {
     });
   }
 
+  /** Solicitud por id, sin relaciones. `null` si no existe. */
+  findById(id: string): Promise<Request | null> {
+    return this.prisma.request.findUnique({ where: { id } });
+  }
+
   /**
    * Detalle de una solicitud con el cliente asociado (AC3). El cliente
    * viene aunque esté archivado: el detalle de una solicitud vieja tiene
