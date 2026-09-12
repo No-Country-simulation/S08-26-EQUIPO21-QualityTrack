@@ -135,6 +135,12 @@ evento que ya quedó registrado en la cotización.
 | `approved`         | Aprobada por el cliente — dispara la creación de la `WORK_ORDER` |
 | `rejected`         | Rechazada por el cliente — no genera `WORK_ORDER`                |
 
+Transiciones: `pending_approval → approved` y `pending_approval →
+rejected`; ambas terminales. El cambio de estado se registra en
+`quote.status` + `quote.updated_at`, **no** en `STATUS_HISTORY` (esa
+tabla es exclusiva de la OT). `approved` crea la `WORK_ORDER` original en
+la misma transacción (ver `docs/adr/0011-ciclo-de-cotizacion-y-generacion-de-ot.md`).
+
 ### WORK_ORDER.status
 
 El flujo de negocio definido para el MVP:

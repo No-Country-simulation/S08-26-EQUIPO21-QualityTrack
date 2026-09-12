@@ -97,7 +97,11 @@ del cliente, @docs/adr/0009-vitest-runner-de-tests.md para Vitest como
 runner de tests del backend (enmienda a ADR-0004), y
 @docs/adr/0010-almacenamiento-de-documentos.md para el proveedor de
 object storage (MinIO en dev vía `compose.yml`, Railway Storage Bucket
-en prod; `DOCUMENT.url` guarda la object key, no una URL firmada).
+en prod; `DOCUMENT.url` guarda la object key, no una URL firmada), y
+@docs/adr/0011-ciclo-de-cotizacion-y-generacion-de-ot.md para el ciclo
+de la `QUOTE` (aprobación/rechazo trazados solo en `quote.status` +
+`updated_at`, sin `STATUS_HISTORY`) y la creación de la `WORK_ORDER`
+original en la misma transacción que la aprobación.
 La estructura de carpetas de referencia está en
 @docs/backend-structure.md.
 
@@ -118,6 +122,12 @@ flujo de negocio se ajusta, este archivo se actualiza en el mismo commit
   sostiene el criterio de éxito.
 - No asumir que toda `QUOTE` tiene una `WORK_ORDER` asociada: la relación
   es 1 a (0 o 1) hasta que la cotización se aprueba (ver ADR-0001).
+- La `QUOTE` no es entidad trazable: su aprobación/rechazo se registra en
+  `quote.status` + `quote.updated_at`, nunca en `STATUS_HISTORY` (ver
+  ADR-0011). Aprobar una `QUOTE` crea la `WORK_ORDER` original en estado
+  `created` en la misma transacción que mueve `quote.status` a `approved`;
+  ese alta no escribe `STATUS_HISTORY` (`created` es el génesis de la OT,
+  no una transición).
 - Una OT no conforme vuelve a producción sobre la misma `WORK_ORDER`, con
   un tope de 3 reprocesos: la transición `nonconforming → in_production`
   se rechaza si ya hay 3 filas `nonconforming` en `STATUS_HISTORY` para

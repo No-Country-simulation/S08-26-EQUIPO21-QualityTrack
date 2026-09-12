@@ -52,8 +52,11 @@ del sistema, no la acción de un usuario puntual.
   aprobación del cliente ocurre fuera del sistema; Comercial la
   registra).
 - **[Comercial]** Puede registrar el rechazo de una cotización.
-- El sistema registra el estado actual de la cotización.
-- Solo una cotización aprobada puede generar una OT.
+- El sistema registra el estado actual de la cotización (en
+  `quote.status` + `quote.updatedAt`; la cotización no lleva historial
+  append-only propio — ver ADR-0011).
+- Solo una cotización aprobada puede generar una OT (la aprobación crea
+  la OT original en la misma transacción — ADR-0011).
 
 ## Épica 3. Órdenes de Trabajo
 
