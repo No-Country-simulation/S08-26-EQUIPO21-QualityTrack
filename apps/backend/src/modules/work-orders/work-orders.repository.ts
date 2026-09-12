@@ -47,9 +47,19 @@ export class WorkOrdersRepository {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException(
-          `La cotización "${data.quoteId}" ya tiene una orden de trabajo.`,
-        );
+        const target = error.meta?.target;
+        const targetStr = Array.isArray(target)
+          ? target.map(String).join(',')
+          : String(target ?? '');
+
+        if (
+          targetStr.includes('work_order_quote_id_original_key') ||
+          targetStr.includes('quote_id')
+        ) {
+          throw new ConflictException(
+            `La cotización "${data.quoteId}" ya tiene una orden de trabajo.`,
+          );
+        }
       }
       throw error;
     }
