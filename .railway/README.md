@@ -11,7 +11,7 @@ Use this file to describe the Railway project you want: services, databases, buc
 The TypeScript file imports `railway/iac`. Install the SDK from the repository root:
 
 ```bash
-npm install railway
+pnpm add -D railway -w
 ```
 
 ## Common commands

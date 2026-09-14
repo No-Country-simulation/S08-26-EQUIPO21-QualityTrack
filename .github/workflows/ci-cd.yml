@@ -145,16 +145,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Versión pineada por reproducibilidad (mismo criterio que .nvmrc y
+      # el packageManager del pnpm-lock). @railway/cli es el paquete del
+      # CLI -- "railway" a secas es el SDK de IaC (railway/iac) que ya
+      # instalamos como devDependency, un paquete distinto.
       - name: Install Railway CLI
-        run: bash <(curl -fsSL railway.com/install.sh)
+        run: npm install -g @railway/cli@5.54.1
 
       # El servicio de Railway ya tiene configurado el builder (Dockerfile,
-      # apps/backend/railway.json -- ver #49) y las variables de entorno
+      # .railway/railway.ts -- IaC, ver #51) y las variables de entorno
       # de producción; acá solo se dispara el build+deploy. El contexto
       # es la raíz del repo porque el Dockerfile del backend lo necesita
       # así (workspace pnpm).
+      #
+      # `--ci` (no `--detach`) porque el job tiene que reflejar el
+      # resultado real del deploy: --detach vuelve en cuanto termina el
+      # upload y el step queda en verde aunque el build/deploy fallen
+      # después -- justo lo que nos pasó al probarlo a mano.
       - name: Deploy to Railway
-        run: railway up --service qualitytrack-backend --detach
+        run: railway up --service qualitytrack-backend --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
