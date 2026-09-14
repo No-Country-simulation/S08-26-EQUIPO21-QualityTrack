@@ -28,6 +28,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
+      // 'lcov' además de 'text': Sonar (ver .github/workflows/ci-cd.yml)
+      // lee coverage/lcov.info, no la salida de texto en consola.
+      reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/generated/**', 'src/**/*.module.ts', 'src/main.ts'],
     },
