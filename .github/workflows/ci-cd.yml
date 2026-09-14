@@ -27,10 +27,10 @@ jobs:
       # fetch-depth: 2 -- paths-filter necesita el commit anterior para
       # poder diffear en eventos `push` (en `pull_request` alcanzaría con
       # la API, pero este workflow dispara con ambos).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -70,12 +70,12 @@ jobs:
       # fetch-depth: 0 -- el proyecto Sonar usa "develop" como reference
       # branch para New Code (ver checklist de setup de #48); con un
       # clone shallow no tiene historial contra el cual diffear.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -91,7 +91,7 @@ jobs:
       # rate limit de pulls anónimos de Docker Hub (postgres/minio/mc son
       # públicas, pero el IP del runner ya viene "gastado" por otros
       # workflows) -- se ve como "pull access denied", no como un límite.
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -129,17 +129,73 @@ jobs:
         with:
           projectBaseDir: apps/backend
 
+  deploy-backend:
+    needs: backend-ci
+    # Solo push a main (nunca develop, nunca pull_request) y solo si
+    # backend-ci corrió y pasó -- si `needs.backend-ci` fue skipped (sin
+    # cambios en apps/backend) su result es "skipped", no "success", así
+    # que este job tampoco corre. `needs` con un `if` propio no hereda el
+    # check de éxito implícito -- por eso se repite acá explícito.
+    #
+    # Deliberadamente NO dispara en pull_request: ese evento se dispara
+    # en cada push a la PR (no solo al abrirla), así que desplegaría
+    # producción con código sin revisar ni mergear -- y con más de una
+    # PR abierta contra main, competirían por pisar el mismo deploy. El
+    # deploy queda post-merge, que es cuando la review ya pasó.
+    if: needs['backend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Si se pushean varios commits seguidos a main, pueden dispararse
+    # varios runs de este job en paralelo -- sin esto, no hay garantía
+    # de cuál `railway up` termina último. cancel-in-progress corta el
+    # deploy viejo apenas entra uno nuevo, así solo termina el del
+    # commit más reciente.
+    concurrency:
+      group: deploy-backend-production
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-node acá también: sin esto, el install global de abajo
+      # corre con el Node que traiga el runner por default, no con el
+      # que fijamos en .nvmrc -- inconsistente con el resto del job,
+      # que sí busca reproducibilidad (ver el pin de versión de abajo).
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Versión pineada por reproducibilidad (mismo criterio que .nvmrc y
+      # el packageManager del pnpm-lock). @railway/cli es el paquete del
+      # CLI -- "railway" a secas es el SDK de IaC (railway/iac) que ya
+      # instalamos como devDependency, un paquete distinto.
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.54.1
+
+      # El servicio de Railway ya tiene configurado el builder (Dockerfile,
+      # .railway/railway.ts -- IaC, ver #51) y las variables de entorno
+      # de producción; acá solo se dispara el build+deploy. El contexto
+      # es la raíz del repo porque el Dockerfile del backend lo necesita
+      # así (workspace pnpm).
+      #
+      # `--ci` (no `--detach`) porque el job tiene que reflejar el
+      # resultado real del deploy: --detach vuelve en cuanto termina el
+      # upload y el step queda en verde aunque el build/deploy fallen
+      # después -- justo lo que nos pasó al probarlo a mano.
+      - name: Deploy to Railway
+        run: railway up --service qualitytrack-backend --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
   frontend-ci:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
