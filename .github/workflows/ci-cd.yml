@@ -27,10 +27,10 @@ jobs:
       # fetch-depth: 2 -- paths-filter necesita el commit anterior para
       # poder diffear en eventos `push` (en `pull_request` alcanzaría con
       # la API, pero este workflow dispara con ambos).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -70,12 +70,12 @@ jobs:
       # fetch-depth: 0 -- el proyecto Sonar usa "develop" como reference
       # branch para New Code (ver checklist de setup de #48); con un
       # clone shallow no tiene historial contra el cual diffear.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -91,7 +91,7 @@ jobs:
       # rate limit de pulls anónimos de Docker Hub (postgres/minio/mc son
       # públicas, pero el IP del runner ya viene "gastado" por otros
       # workflows) -- se ve como "pull access denied", no como un límite.
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -144,8 +144,24 @@ jobs:
     # deploy queda post-merge, que es cuando la review ya pasó.
     if: needs['backend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Si se pushean varios commits seguidos a main, pueden dispararse
+    # varios runs de este job en paralelo -- sin esto, no hay garantía
+    # de cuál `railway up` termina último. cancel-in-progress corta el
+    # deploy viejo apenas entra uno nuevo, así solo termina el del
+    # commit más reciente.
+    concurrency:
+      group: deploy-backend-production
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      # setup-node acá también: sin esto, el install global de abajo
+      # corre con el Node que traiga el runner por default, no con el
+      # que fijamos en .nvmrc -- inconsistente con el resto del job,
+      # que sí busca reproducibilidad (ver el pin de versión de abajo).
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
 
       # Versión pineada por reproducibilidad (mismo criterio que .nvmrc y
       # el packageManager del pnpm-lock). @railway/cli es el paquete del
@@ -174,12 +190,12 @@ jobs:
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
