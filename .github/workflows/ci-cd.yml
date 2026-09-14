@@ -73,6 +73,15 @@ jobs:
       - run: pnpm --filter backend test:cov
       - run: pnpm --filter backend build
 
+      # Sin login, los runners compartidos de GitHub suelen pegarle al
+      # rate limit de pulls anónimos de Docker Hub (postgres/minio/mc son
+      # públicas, pero el IP del runner ya viene "gastado" por otros
+      # workflows) -- se ve como "pull access denied", no como un límite.
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       # compose.yml (raíz) levanta el mismo Postgres + MinIO que un dev
       # local (ver ADR-0010) -- el e2e corre contra esa infra real, no
       # contra `services:` duplicados en el workflow.
