@@ -36,8 +36,18 @@ jobs:
           filters: |
             backend:
               - 'apps/backend/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.nvmrc'
             frontend:
               - 'apps/frontend/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.nvmrc'
 
   backend-ci:
     needs: changes
