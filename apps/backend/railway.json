@@ -1,0 +1,12 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "apps/backend/Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "prisma migrate deploy && node dist/main.js",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE"
+  }
+}
