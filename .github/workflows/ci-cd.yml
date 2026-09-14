@@ -108,6 +108,11 @@ jobs:
       # bucket bien) es el que se propaga.
       - run: docker compose up -d --wait postgres minio
       - run: docker compose up minio-setup
+      # El Postgres de CI es efímero (arranca sin tablas en cada run) --
+      # a diferencia de un Postgres de dev, que ya viene con las
+      # migraciones aplicadas de sesiones anteriores. `prisma:generate`
+      # solo tipa el cliente, no toca el esquema real.
+      - run: pnpm --filter backend prisma:migrate:deploy
       - run: pnpm --filter backend test:e2e
       - if: always()
         run: docker compose down -v
