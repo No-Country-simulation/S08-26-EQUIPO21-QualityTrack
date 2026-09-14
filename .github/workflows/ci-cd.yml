@@ -12,6 +12,10 @@ on:
 
 permissions:
   contents: read
+  # dorny/paths-filter, en eventos pull_request, usa la REST API para
+  # listar los archivos modificados (a diferencia de push, donde usa git
+  # local) -- necesita este permiso aunque el job ya haga checkout.
+  pull-requests: read
 
 jobs:
   changes:
