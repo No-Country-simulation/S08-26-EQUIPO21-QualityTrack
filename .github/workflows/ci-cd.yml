@@ -1,0 +1,123 @@
+name: CI/CD
+
+# Solo corren los jobs del área que cambió (job `changes`, dorny/paths-filter):
+# un PR de frontend no dispara ni espera los tests del backend, y viceversa.
+# Ver docs/adr (pendiente ADR-0012) e issue #48.
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      # fetch-depth: 2 -- paths-filter necesita el commit anterior para
+      # poder diffear en eventos `push` (en `pull_request` alcanzaría con
+      # la API, pero este workflow dispara con ambos).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+            frontend:
+              - 'apps/frontend/**'
+
+  backend-ci:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    # Variables de apps/backend/.env.example -- mismos valores que
+    # compose.yml (raíz), así el e2e de este job ve la misma infra que
+    # un dev local.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/qualitytrack?schema=public
+      PORT: 3000
+      NODE_ENV: test
+      STORAGE_ENDPOINT: http://localhost:9100
+      STORAGE_REGION: us-east-1
+      STORAGE_BUCKET: qualitytrack
+      STORAGE_ACCESS_KEY_ID: minio
+      STORAGE_SECRET_ACCESS_KEY: minio12345
+      STORAGE_FORCE_PATH_STYLE: 'true'
+    steps:
+      # fetch-depth: 0 -- el proyecto Sonar usa "develop" como reference
+      # branch para New Code (ver checklist de setup de #48); con un
+      # clone shallow no tiene historial contra el cual diffear.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter backend prisma:generate
+      - run: pnpm --filter backend lint
+      - run: pnpm --filter backend test:cov
+      - run: pnpm --filter backend build
+
+      # compose.yml (raíz) levanta el mismo Postgres + MinIO que un dev
+      # local (ver ADR-0010) -- el e2e corre contra esa infra real, no
+      # contra `services:` duplicados en el workflow.
+      - run: docker compose up -d --wait
+      - run: pnpm --filter backend test:e2e
+      - if: always()
+        run: docker compose down -v
+
+      - name: SonarQube Scan (backend)
+        # Se saltea sin romper el job si todavía no se cargaron los
+        # secrets (ver checklist de setup manual en la descripción del PR
+        # / issue #48) -- evita que cada PR quede rojo antes de ese paso.
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: apps/backend
+
+  frontend-ci:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter frontend lint
+      - run: pnpm --filter frontend build
+
+      - name: SonarQube Scan (frontend)
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: apps/frontend
