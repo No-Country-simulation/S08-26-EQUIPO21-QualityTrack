@@ -129,6 +129,35 @@ jobs:
         with:
           projectBaseDir: apps/backend
 
+  deploy-backend:
+    needs: backend-ci
+    # Solo push a main o PR contra main (nunca develop) y solo si
+    # backend-ci corrió y pasó -- si `needs.backend-ci` fue skipped (sin
+    # cambios en apps/backend) su result es "skipped", no "success", así
+    # que este job tampoco corre. `needs` con un `if` propio no hereda el
+    # check de éxito implícito -- por eso se repite acá explícito.
+    #
+    # `github.ref` en un evento pull_request NO es la rama destino (es
+    # refs/pull/<n>/merge), por eso el chequeo de "va a main" se hace
+    # distinto según el evento: `ref` para push, `base_ref` para PR.
+    if: needs['backend-ci'].result == 'success' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: bash <(curl -fsSL railway.com/install.sh)
+
+      # El servicio de Railway ya tiene configurado el builder (Dockerfile,
+      # apps/backend/railway.json -- ver #49) y las variables de entorno
+      # de producción; acá solo se dispara el build+deploy. El contexto
+      # es la raíz del repo porque el Dockerfile del backend lo necesita
+      # así (workspace pnpm).
+      - name: Deploy to Railway
+        run: railway up --service qualitytrack-backend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
   frontend-ci:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
