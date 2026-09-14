@@ -95,4 +95,4 @@ EXPOSE 3000
 # Railway pisa este CMD con el `startCommand` de railway.json, pero se
 # deja el mismo comportamiento acá para poder probar la imagen suelta
 # con `docker run` contra un Postgres de prueba.
-CMD ["sh", "-c", "prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "prisma migrate deploy && exec node dist/main.js"]
