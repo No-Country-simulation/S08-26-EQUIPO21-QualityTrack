@@ -102,7 +102,7 @@ jobs:
         # Se saltea sin romper el job si todavía no se cargaron los
         # secrets (ver checklist de setup manual en la descripción del PR
         # / issue #48) -- evita que cada PR quede rojo antes de ese paso.
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -131,7 +131,7 @@ jobs:
       - run: pnpm --filter frontend build
 
       - name: SonarQube Scan (frontend)
-        if: ${{ env.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
