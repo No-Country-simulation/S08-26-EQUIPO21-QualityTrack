@@ -8,7 +8,7 @@
 #
 # Ver docs/adr/0004-stack-tecnologico.md (Node 24 LTS, pnpm) y
 # docs/adr/0010-almacenamiento-de-documentos.md (Railway como destino
-# de despliegue). El healthcheck de la imagen y `railway.json` esperan
+# de despliegue). En Railway, el healthcheck espera
 # GET /health (src/modules/health).
 
 ARG NODE_VERSION=24-slim
