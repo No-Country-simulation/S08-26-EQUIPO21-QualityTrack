@@ -21,7 +21,10 @@ services:
   # En producción esto es un Railway Storage Bucket; la app no distingue
   # uno de otro, solo cambian las variables STORAGE_* del .env.
   minio:
-    image: minio/minio:latest
+    # MinIO sacó minio/minio y minio/mc de Docker Hub (mudaron la
+    # distribución a Quay) -- con el nombre viejo, "docker compose up"
+    # falla con "pull access denied" incluso autenticado.
+    image: quay.io/minio/minio:latest
     container_name: qualitytrack-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -51,7 +54,7 @@ services:
   # Crea el bucket 'qualitytrack' al levantar el stack y termina.
   # Idempotente: si el bucket ya existe, no falla.
   minio-setup:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     container_name: qualitytrack-minio-setup
     depends_on:
       minio:
