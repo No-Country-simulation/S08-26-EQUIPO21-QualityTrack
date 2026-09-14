@@ -131,16 +131,18 @@ jobs:
 
   deploy-backend:
     needs: backend-ci
-    # Solo push a main o PR contra main (nunca develop) y solo si
+    # Solo push a main (nunca develop, nunca pull_request) y solo si
     # backend-ci corrió y pasó -- si `needs.backend-ci` fue skipped (sin
     # cambios en apps/backend) su result es "skipped", no "success", así
     # que este job tampoco corre. `needs` con un `if` propio no hereda el
     # check de éxito implícito -- por eso se repite acá explícito.
     #
-    # `github.ref` en un evento pull_request NO es la rama destino (es
-    # refs/pull/<n>/merge), por eso el chequeo de "va a main" se hace
-    # distinto según el evento: `ref` para push, `base_ref` para PR.
-    if: needs['backend-ci'].result == 'success' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main'))
+    # Deliberadamente NO dispara en pull_request: ese evento se dispara
+    # en cada push a la PR (no solo al abrirla), así que desplegaría
+    # producción con código sin revisar ni mergear -- y con más de una
+    # PR abierta contra main, competirían por pisar el mismo deploy. El
+    # deploy queda post-merge, que es cuando la review ya pasó.
+    if: needs['backend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
