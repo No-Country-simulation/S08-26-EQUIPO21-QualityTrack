@@ -51,7 +51,7 @@ jobs:
       STORAGE_BUCKET: qualitytrack
       STORAGE_ACCESS_KEY_ID: minio
       STORAGE_SECRET_ACCESS_KEY: minio12345
-      STORAGE_FORCE_PATH_STYLE: 'true'
+      STORAGE_FORCE_PATH_STYLE: "true"
     steps:
       # fetch-depth: 0 -- el proyecto Sonar usa "develop" como reference
       # branch para New Code (ver checklist de setup de #48); con un
@@ -85,7 +85,15 @@ jobs:
       # compose.yml (raíz) levanta el mismo Postgres + MinIO que un dev
       # local (ver ADR-0010) -- el e2e corre contra esa infra real, no
       # contra `services:` duplicados en el workflow.
-      - run: docker compose up -d --wait
+      #
+      # `--wait` solo se aplica a postgres/minio (servicios de larga
+      # duración): `minio-setup` es un job de un solo uso que termina
+      # apenas crea el bucket, y `--wait` trata cualquier container que
+      # se detenga -- incluso con éxito -- como una falla. Por eso corre
+      # aparte, en foreground, así su propio exit code (0 si creó el
+      # bucket bien) es el que se propaga.
+      - run: docker compose up -d --wait postgres minio
+      - run: docker compose up minio-setup
       - run: pnpm --filter backend test:e2e
       - if: always()
         run: docker compose down -v
@@ -126,7 +134,7 @@ jobs:
         if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarqube-scan-action@v5
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: apps/frontend
