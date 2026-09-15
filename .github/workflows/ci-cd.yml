@@ -117,6 +117,13 @@ jobs:
       - if: always()
         run: docker compose down -v
 
+      # sonar.projectVersion = SHA corto del commit real. En eventos
+      # pull_request, github.sha es el merge commit sintético
+      # (refs/pull/N/merge) y no el commit de la rama -- por eso se
+      # prioriza pull_request.head.sha cuando existe.
+      - name: Resolver SHA para versionado en Sonar
+        run: echo "SONAR_PROJECT_VERSION=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
+
       - name: SonarQube Scan (backend)
         # Se saltea sin romper el job si todavía no se cargaron los
         # secrets (ver checklist de setup manual en la descripción del PR
@@ -128,6 +135,8 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: apps/backend
+          args: >
+            -Dsonar.projectVersion=${{ env.SONAR_PROJECT_VERSION }}
 
       # Hace fallar el job si el Quality Gate de Sonar no pasa -- sin
       # este step, el scan de arriba solo sube el análisis, pero nunca
@@ -227,6 +236,11 @@ jobs:
       - run: pnpm --filter frontend test:cov
       - run: pnpm --filter frontend build
 
+      # Mismo criterio que en backend-ci: pull_request.head.sha antes que
+      # el merge commit sintético de github.sha.
+      - name: Resolver SHA para versionado en Sonar
+        run: echo "SONAR_PROJECT_VERSION=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
+
       - name: SonarQube Scan (frontend)
         if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v5
@@ -235,6 +249,8 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: apps/frontend
+          args: >
+            -Dsonar.projectVersion=${{ env.SONAR_PROJECT_VERSION }}
 
       - name: SonarQube Quality Gate (frontend)
         if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
