@@ -20,6 +20,27 @@ export interface EnvVars {
   CORS_ORIGIN: string; // Origen exacto del frontend
 }
 
+function requireNonEmpty(
+  errors: string[],
+  key: string,
+  value: string | undefined,
+  hint: string,
+): value is string {
+  if (value === undefined || value.length === 0) {
+    errors.push(`${key} falta o está vacía. ${hint}`);
+    return false;
+  }
+  return true;
+}
+
+function requireHttpUrl(errors: string[], key: string, value: string): void {
+  if (!/^https?:\/\//.test(value)) {
+    errors.push(
+      `${key} debe empezar con http:// o https:// (recibido: "${value}").`,
+    );
+  }
+}
+
 export function validate(
   // process.env / dotenv siempre entrega strings (o undefined); nunca
   // objetos ni números. Tiparlo así evita falsos positivos de
@@ -29,12 +50,15 @@ export function validate(
   const errors: string[] = [];
 
   const databaseUrl = config.DATABASE_URL;
-  if (databaseUrl === undefined || databaseUrl.length === 0) {
-    errors.push(
-      'DATABASE_URL falta o está vacía. Copiá apps/backend/.env.example a ' +
-        'apps/backend/.env (ver apps/backend/README.md).',
-    );
-  } else if (!/^postgres(ql)?:\/\//.test(databaseUrl)) {
+  if (
+    requireNonEmpty(
+      errors,
+      'DATABASE_URL',
+      databaseUrl,
+      'Copiá apps/backend/.env.example a apps/backend/.env (ver apps/backend/README.md).',
+    ) &&
+    !/^postgres(ql)?:\/\//.test(databaseUrl)
+  ) {
     errors.push(
       `DATABASE_URL no parece una cadena de PostgreSQL válida: "${databaseUrl}". ` +
         'Debe empezar con postgresql://',
@@ -67,26 +91,20 @@ export function validate(
     'STORAGE_SECRET_ACCESS_KEY',
   ] as const) {
     const value = config[key];
-    if (value === undefined || value.length === 0) {
-      errors.push(
-        `${key} falta o está vacía. Copiá apps/backend/.env.example a ` +
-          'apps/backend/.env (ver ADR-0010 y apps/backend/README.md).',
-      );
-    } else {
+    if (
+      requireNonEmpty(
+        errors,
+        key,
+        value,
+        'Copiá apps/backend/.env.example a apps/backend/.env (ver ADR-0010 y apps/backend/README.md).',
+      )
+    ) {
       storage[key] = value;
     }
   }
 
-  if (
-    config.STORAGE_ENDPOINT !== undefined &&
-    config.STORAGE_ENDPOINT.length > 0
-  ) {
-    if (!/^https?:\/\//.test(config.STORAGE_ENDPOINT)) {
-      errors.push(
-        `STORAGE_ENDPOINT debe empezar con http:// o https:// ` +
-          `(recibido: "${config.STORAGE_ENDPOINT}").`,
-      );
-    }
+  if (storage.STORAGE_ENDPOINT !== undefined) {
+    requireHttpUrl(errors, 'STORAGE_ENDPOINT', storage.STORAGE_ENDPOINT);
   }
 
   // Opcional: default false. Solo 'true' (case-insensitive) lo activa —
@@ -95,16 +113,15 @@ export function validate(
     (config.STORAGE_FORCE_PATH_STYLE ?? 'false').toLowerCase() === 'true';
 
   const corsOrigin = config.CORS_ORIGIN;
-  if (corsOrigin === undefined || corsOrigin.length === 0) {
-    errors.push(
-      'CORS_ORIGIN falta o está vacía. Copiá apps/backend/.env.example a ' +
-        'apps/backend/.env',
-    );
-  } else if (!/^https?:\/\//.test(corsOrigin)) {
-    errors.push(
-      `CORS_ORIGIN debe empezar con http:// o https:// ` +
-        `(recibido: "${corsOrigin}").`,
-    );
+  if (
+    requireNonEmpty(
+      errors,
+      'CORS_ORIGIN',
+      corsOrigin,
+      'Copiá apps/backend/.env.example a apps/backend/.env',
+    )
+  ) {
+    requireHttpUrl(errors, 'CORS_ORIGIN', corsOrigin);
   }
 
   if (errors.length > 0 || databaseUrl === undefined) {
