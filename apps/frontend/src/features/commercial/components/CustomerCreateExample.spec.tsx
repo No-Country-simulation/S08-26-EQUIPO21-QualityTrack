@@ -68,6 +68,10 @@ describe('CustomerCreateExample', () => {
       address: 'Calle Falsa 123, Ciudad, País',
       archivedAt: null,
     });
+
+    expect(
+      await screen.findByRole('button', { name: 'Crear cliente' }),
+    ).toBeEnabled();
   });
 
   it('shows an error message when the mutation fails', async () => {
