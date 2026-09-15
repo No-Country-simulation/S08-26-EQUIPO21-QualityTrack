@@ -1,0 +1,37 @@
+# Contexto de build = raíz del repo (ver apps/backend/Dockerfile).
+# Todo lo que no hace falta para instalar dependencias pnpm ni compilar
+# el backend queda afuera, para no inflar el contexto ni invalidar cache.
+
+**/node_modules
+**/dist
+**/coverage
+**/.vitest
+**/*.tsbuildinfo
+
+.git
+.github
+.husky
+.vscode
+.opencode
+
+# Cliente de Prisma generado -- se regenera en el stage `build` del
+# Dockerfile (`prisma generate`), no hace falta copiarlo del host.
+apps/backend/src/generated
+
+# Variables de entorno locales -- nunca al contexto de build. En
+# Railway y en `docker run` las variables se inyectan por el entorno
+# del contenedor.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Agentes / asistentes -- no aportan nada al build.
+**/.claude
+**/.agents
+**/.windsurf
+
+# Documentación y misceláneos que no participan del build.
+docs
+requests
+scripts
+*.md

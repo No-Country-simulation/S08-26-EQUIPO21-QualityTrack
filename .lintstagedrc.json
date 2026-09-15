@@ -1,0 +1,4 @@
+{
+  "*.{js,jsx,ts,tsx,json,md}": ["prettier --write"],
+  "apps/backend/**/*.ts": ["pnpm --filter backend exec oxlint"]
+}

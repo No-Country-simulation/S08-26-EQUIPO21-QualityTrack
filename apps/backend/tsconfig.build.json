@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src"
+    "rootDir": "./src",
+    // El base usa `noEmit: true` (solo type-check); acá se reactiva la
+    // emisión para que `nest build` compile a dist/.
+    "noEmit": false
   },
   "include": ["src"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]

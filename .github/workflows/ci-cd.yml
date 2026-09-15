@@ -1,0 +1,293 @@
+name: CI/CD
+
+# Solo corren los jobs del área que cambió (job `changes`, dorny/paths-filter):
+# un PR de frontend no dispara ni espera los tests del backend, y viceversa.
+# Ver docs/adr (pendiente ADR-0012) e issue #48.
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  # dorny/paths-filter, en eventos pull_request, usa la REST API para
+  # listar los archivos modificados (a diferencia de push, donde usa git
+  # local) -- necesita este permiso aunque el job ya haga checkout.
+  pull-requests: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      # fetch-depth: 2 -- paths-filter necesita el commit anterior para
+      # poder diffear en eventos `push` (en `pull_request` alcanzaría con
+      # la API, pero este workflow dispara con ambos).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'apps/backend/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.nvmrc'
+            frontend:
+              - 'apps/frontend/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.nvmrc'
+
+  backend-ci:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    # Variables de apps/backend/.env.example -- mismos valores que
+    # compose.yml (raíz), así el e2e de este job ve la misma infra que
+    # un dev local.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/qualitytrack?schema=public
+      PORT: 3000
+      NODE_ENV: test
+      CORS_ORIGIN: http://localhost:5173
+      STORAGE_ENDPOINT: http://localhost:9100
+      STORAGE_REGION: us-east-1
+      STORAGE_BUCKET: qualitytrack
+      STORAGE_ACCESS_KEY_ID: minio
+      STORAGE_SECRET_ACCESS_KEY: minio12345
+      STORAGE_FORCE_PATH_STYLE: "true"
+    steps:
+      # fetch-depth: 0 -- el proyecto Sonar usa "develop" como reference
+      # branch para New Code (ver checklist de setup de #48); con un
+      # clone shallow no tiene historial contra el cual diffear.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter backend prisma:generate
+      - run: pnpm --filter backend lint
+      - run: pnpm --filter backend test:cov
+      - run: pnpm --filter backend build
+
+      # Sin login, los runners compartidos de GitHub suelen pegarle al
+      # rate limit de pulls anónimos de Docker Hub (postgres/minio/mc son
+      # públicas, pero el IP del runner ya viene "gastado" por otros
+      # workflows) -- se ve como "pull access denied", no como un límite.
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # compose.yml (raíz) levanta el mismo Postgres + MinIO que un dev
+      # local (ver ADR-0010) -- el e2e corre contra esa infra real, no
+      # contra `services:` duplicados en el workflow.
+      #
+      # `--wait` solo se aplica a postgres/minio (servicios de larga
+      # duración): `minio-setup` es un job de un solo uso que termina
+      # apenas crea el bucket, y `--wait` trata cualquier container que
+      # se detenga -- incluso con éxito -- como una falla. Por eso corre
+      # aparte, en foreground, así su propio exit code (0 si creó el
+      # bucket bien) es el que se propaga.
+      - run: docker compose up -d --wait postgres minio
+      - run: docker compose up minio-setup
+      # El Postgres de CI es efímero (arranca sin tablas en cada run) --
+      # a diferencia de un Postgres de dev, que ya viene con las
+      # migraciones aplicadas de sesiones anteriores. `prisma:generate`
+      # solo tipa el cliente, no toca el esquema real.
+      - run: pnpm --filter backend prisma:migrate:deploy
+      - run: pnpm --filter backend test:e2e
+      - if: always()
+        run: docker compose down -v
+
+      # sonar.projectVersion = SHA corto del commit real. En eventos
+      # pull_request, github.sha es el merge commit sintético
+      # (refs/pull/N/merge) y no el commit de la rama -- por eso se
+      # prioriza pull_request.head.sha cuando existe.
+      - name: Resolver SHA para versionado en Sonar
+        run: echo "SONAR_PROJECT_VERSION=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
+
+      - name: SonarQube Scan (backend)
+        # Se saltea sin romper el job si todavía no se cargaron los
+        # secrets (ver checklist de setup manual en la descripción del PR
+        # / issue #48) -- evita que cada PR quede rojo antes de ese paso.
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: apps/backend
+          args: >
+            -Dsonar.projectVersion=${{ env.SONAR_PROJECT_VERSION }}
+
+      # Hace fallar el job si el Quality Gate de Sonar no pasa -- sin
+      # este step, el scan de arriba solo sube el análisis, pero nunca
+      # rompe el CI aunque el gate esté en rojo. El gate en sí (el 80%
+      # de cobertura en New Code, "Sonar Way" por default) se configura
+      # en el servidor Sonar (Project → Quality Gates), no acá.
+      - name: SonarQube Quality Gate (backend)
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        with:
+          # Default de la acción: ".scannerwork/report-task.txt" en la
+          # raíz del repo. El scan de arriba corre con
+          # `projectBaseDir: apps/backend`, así que el report-task.txt
+          # real queda ahí adentro, no en la raíz -- sin esto, el step
+          # falla con ".scannerwork/report-task.txt does not exist"
+          # (visto en el primer run real, PR #62).
+          scanMetadataReportFile: apps/backend/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  deploy-backend:
+    needs: backend-ci
+    # Solo push a main (nunca develop, nunca pull_request) y solo si
+    # backend-ci corrió y pasó -- si `needs.backend-ci` fue skipped (sin
+    # cambios en apps/backend) su result es "skipped", no "success", así
+    # que este job tampoco corre. `needs` con un `if` propio no hereda el
+    # check de éxito implícito -- por eso se repite acá explícito.
+    #
+    # Deliberadamente NO dispara en pull_request: ese evento se dispara
+    # en cada push a la PR (no solo al abrirla), así que desplegaría
+    # producción con código sin revisar ni mergear -- y con más de una
+    # PR abierta contra main, competirían por pisar el mismo deploy. El
+    # deploy queda post-merge, que es cuando la review ya pasó.
+    if: needs['backend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Si se pushean varios commits seguidos a main, pueden dispararse
+    # varios runs de este job en paralelo -- sin esto, no hay garantía
+    # de cuál `railway up` termina último. cancel-in-progress corta el
+    # deploy viejo apenas entra uno nuevo, así solo termina el del
+    # commit más reciente.
+    concurrency:
+      group: deploy-backend-production
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-node acá también: sin esto, el install global de abajo
+      # corre con el Node que traiga el runner por default, no con el
+      # que fijamos en .nvmrc -- inconsistente con el resto del job,
+      # que sí busca reproducibilidad (ver el pin de versión de abajo).
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Versión pineada por reproducibilidad (mismo criterio que .nvmrc y
+      # el packageManager del pnpm-lock). @railway/cli es el paquete del
+      # CLI -- "railway" a secas es el SDK de IaC (railway/iac) que ya
+      # instalamos como devDependency, un paquete distinto.
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.54.1
+
+      # El servicio de Railway ya tiene configurado el builder (Dockerfile,
+      # .railway/railway.ts -- IaC, ver #51) y las variables de entorno
+      # de producción; acá solo se dispara el build+deploy. El contexto
+      # es la raíz del repo porque el Dockerfile del backend lo necesita
+      # así (workspace pnpm).
+      #
+      # `--ci` (no `--detach`) porque el job tiene que reflejar el
+      # resultado real del deploy: --detach vuelve en cuanto termina el
+      # upload y el step queda en verde aunque el build/deploy fallen
+      # después -- justo lo que nos pasó al probarlo a mano.
+      - name: Deploy to Railway
+        run: railway up --service qualitytrack-backend --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  frontend-ci:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter frontend lint
+      - run: pnpm --filter frontend test:cov
+      - run: pnpm --filter frontend build
+
+      # Mismo criterio que en backend-ci: pull_request.head.sha antes que
+      # el merge commit sintético de github.sha.
+      - name: Resolver SHA para versionado en Sonar
+        run: echo "SONAR_PROJECT_VERSION=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)" >> "$GITHUB_ENV"
+
+      - name: SonarQube Scan (frontend)
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: apps/frontend
+          args: >
+            -Dsonar.projectVersion=${{ env.SONAR_PROJECT_VERSION }}
+
+      - name: SonarQube Quality Gate (frontend)
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        with:
+          scanMetadataReportFile: apps/frontend/.scannerwork/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  deploy-frontend:
+    needs: frontend-ci
+    # Mismo criterio que deploy-backend: solo push a main, nunca en
+    # develop ni pull_request, y solo si frontend-ci corrió y pasó.
+    if: needs['frontend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-frontend-production
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.54.1
+
+      # El servicio 'qualitytrack-frontend' ya tiene su builder (Dockerfile,
+      # .railway/railway.ts) y VITE_API_URL configurado como build ARG --
+      # Railway lo inyecta en el build de Docker automáticamente (matchea
+      # el ARG del Dockerfile contra las variables del service, ver
+      # apps/frontend/Dockerfile). Acá solo se dispara el build+deploy.
+      - name: Deploy to Railway
+        run: railway up --service qualitytrack-frontend --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

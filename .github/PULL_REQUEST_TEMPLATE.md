@@ -1,6 +1,6 @@
-## 📋 Summary
+## 📋 Resumen
 
-<!-- Brief description of changes -->
+<!-- Breve descripción de los cambios -->
 
 **Type:**
 
@@ -11,19 +11,19 @@
 - [ ] 🧪 Tests
 - [ ] 🔧 Config
 
-## 🎯 Changes
+## 🎯 Cambios
 
-<!-- What changed and why -->
+<!-- Qué cambió y por qué -->
 
-## 📱 Screenshots
+## 📱 Capturas de pantalla
 
-<!-- If UI changes, add before/after -->
+<!-- Si hay cambios en la interfaz, agregar antes/después -->
 
 ---
 
-**Ready for merge:**
+**Listo para merge:**
 
-- [ ] ✅ Tested locally
-- [ ] ✅ CI checks pass
+- [ ] ✅ Probado localmente
+- [ ] ✅ Pasó las verificaciones de CI
 
 <!-- 🤖 Automated: Linting, Tests, SonarQube, Security Scanning -->

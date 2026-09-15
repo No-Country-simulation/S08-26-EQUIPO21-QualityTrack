@@ -92,6 +92,7 @@ build/Release
 
 # Dependency directories
 node_modules/
+.pnpm-store/
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -227,5 +228,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+.opencode
+scripts
 
 # End of https://www.toptal.com/developers/gitignore/api/node,react,windows,macos,linux
