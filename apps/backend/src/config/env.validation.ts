@@ -17,6 +17,7 @@ export interface EnvVars {
   STORAGE_ACCESS_KEY_ID: string;
   STORAGE_SECRET_ACCESS_KEY: string;
   STORAGE_FORCE_PATH_STYLE: boolean;
+  CORS_ORIGIN: string; // Origen exacto del frontend
 }
 
 export function validate(
@@ -93,6 +94,19 @@ export function validate(
   const forcePathStyle =
     (config.STORAGE_FORCE_PATH_STYLE ?? 'false').toLowerCase() === 'true';
 
+  const corsOrigin = config.CORS_ORIGIN;
+  if (corsOrigin === undefined || corsOrigin.length === 0) {
+    errors.push(
+      'CORS_ORIGIN falta o está vacía. Copiá apps/backend/.env.example a ' +
+        'apps/backend/.env',
+    );
+  } else if (!/^https?:\/\//.test(corsOrigin)) {
+    errors.push(
+      `CORS_ORIGIN debe empezar con http:// o https:// ` +
+        `(recibido: "${corsOrigin}").`,
+    );
+  }
+
   if (errors.length > 0 || databaseUrl === undefined) {
     throw new Error(
       `Configuración de entorno inválida:\n  - ${errors.join('\n  - ')}`,
@@ -109,5 +123,6 @@ export function validate(
     STORAGE_ACCESS_KEY_ID: storage.STORAGE_ACCESS_KEY_ID,
     STORAGE_SECRET_ACCESS_KEY: storage.STORAGE_SECRET_ACCESS_KEY,
     STORAGE_FORCE_PATH_STYLE: forcePathStyle,
+    CORS_ORIGIN: corsOrigin as string,
   };
 }
