@@ -261,3 +261,32 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  deploy-frontend:
+    needs: frontend-ci
+    # Mismo criterio que deploy-backend: solo push a main, nunca en
+    # develop ni pull_request, y solo si frontend-ci corrió y pasó.
+    if: needs['frontend-ci'].result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-frontend-production
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.54.1
+
+      # El servicio 'qualitytrack-frontend' ya tiene su builder (Dockerfile,
+      # .railway/railway.ts) y VITE_API_URL configurado como build ARG --
+      # Railway lo inyecta en el build de Docker automáticamente (matchea
+      # el ARG del Dockerfile contra las variables del service, ver
+      # apps/frontend/Dockerfile). Acá solo se dispara el build+deploy.
+      - name: Deploy to Railway
+        run: railway up --service qualitytrack-frontend --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
