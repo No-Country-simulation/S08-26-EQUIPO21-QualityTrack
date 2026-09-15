@@ -56,7 +56,8 @@ COPY packages/tsconfig-base packages/tsconfig-base
 COPY apps/frontend apps/frontend
 
 ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
+RUN test -n "$VITE_API_URL" || (echo "VITE_API_URL build-arg is required" >&2 && exit 1)
+ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm --filter frontend build
 
 # ---------------------------------------------------------------------------

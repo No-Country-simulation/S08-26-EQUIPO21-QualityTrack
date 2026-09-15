@@ -44,9 +44,36 @@ export default defineRailway(() => {
     },
   });
 
+  const qualitytrackFrontend = service('qualitytrack-frontend', {
+    // Mismo motivo que el backend: sin `source`, el deploy lo dispara
+    // `railway up` desde GitHub Actions (job deploy-frontend), no el
+    // auto-deploy nativo de Railway -- ver docs/adr/0012 e issue #51.
+    build: {
+      builder: 'DOCKERFILE',
+      dockerfilePath: 'apps/frontend/Dockerfile',
+    },
+    env: {
+      // VITE_API_URL es un build ARG -- Vite lo inlinea en el bundle en
+      // build-time, no en runtime (ver apps/frontend/Dockerfile). Railway
+      // matchea el nombre del ARG contra las variables del service y lo
+      // inyecta en el build automáticamente, sin config adicional.
+      //
+      // Referencia al dominio público del backend en vez de hardcodearlo
+      // (es un dominio generado por Railway -- no se commitea un valor
+      // fijo, se resuelve solo si el dominio cambia). El helper
+      // `service.env.X` de la SDK no interpola dentro de un template
+      // string de JS (stringifica a "[object Object]", verificado con
+      // `railway config plan --json --show-values`) -- hace falta la
+      // sintaxis de template de Railway a mano.
+      VITE_API_URL:
+        'https://${{qualitytrack-backend.RAILWAY_PUBLIC_DOMAIN}}/api/v1',
+    },
+  });
+
   return project('qualitytrack', {
     resources: [
       qualitytrackBackend,
+      qualitytrackFrontend,
       qualitytrackDb,
       postgresVolume,
       qualitytrackBucket,
