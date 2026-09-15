@@ -1,3 +1,6 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { queryKeys } from '@/app/api';
 import { createCustomer } from '@/services/commercial';
 
 const customerExample = {
@@ -9,25 +12,27 @@ const customerExample = {
 };
 
 export function CustomerCreateExample() {
-  async function handleCreateCustomer() {
-    try {
-      const customer = await createCustomer(customerExample);
-
-      console.log('Cliente creado:', customer);
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  const queryClient = useQueryClient();
+  const { mutate, isPending, isError } = useMutation({
+    mutationFn: createCustomer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
+    },
+  });
 
   return (
     <section>
       <button
-        className="border-2 cursor-pointer"
+        className="border-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         type="button"
-        onClick={handleCreateCustomer}
+        disabled={isPending}
+        onClick={() => mutate(customerExample)}
       >
-        Crear cliente
+        {isPending ? 'Creando...' : 'Crear cliente'}
       </button>
+      {isError && (
+        <p className="text-sm text-red-600">No se pudo crear el cliente.</p>
+      )}
     </section>
   );
 }
