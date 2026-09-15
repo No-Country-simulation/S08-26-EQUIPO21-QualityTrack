@@ -7,10 +7,12 @@ import { EnvVars } from './config/env.validation';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService<EnvVars, true>);
 
   // Cierra el pool de Prisma (onModuleDestroy) al recibir SIGTERM/SIGINT,
   // p. ej. en `docker stop` o al frenar los tests (ver ADR-0004).
   app.enableShutdownHooks();
+  app.enableCors({ origin: configService.get('CORS_ORIGIN', { infer: true }) });
 
   // Validación de DTOs con class-validator en toda la API:
   //  - whitelist: descarta propiedades del body sin decorador de validación.
@@ -45,7 +47,6 @@ async function bootstrap() {
     jsonDocumentUrl: 'docs/json', // OpenAPI JSON crudo en /docs/json
   });
 
-  const configService = app.get(ConfigService<EnvVars, true>);
   await app.listen(configService.get('PORT', { infer: true }));
 }
 bootstrap();

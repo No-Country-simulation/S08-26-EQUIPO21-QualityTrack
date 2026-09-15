@@ -41,6 +41,7 @@ export default defineRailway(() => {
       STORAGE_ENDPOINT: preserve(),
       STORAGE_REGION: preserve(),
       STORAGE_SECRET_ACCESS_KEY: preserve(),
+      CORS_ORIGIN: 'https://${{qualitytrack-frontend.RAILWAY_PUBLIC_DOMAIN}}',
     },
   });
 
