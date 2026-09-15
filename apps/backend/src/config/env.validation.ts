@@ -41,6 +41,31 @@ function requireHttpUrl(errors: string[], key: string, value: string): void {
   }
 }
 
+// A diferencia de requireHttpUrl, exige un origin exacto (sin path,
+// query ni trailing slash): CORS_ORIGIN se compara literal contra el
+// header Origin del navegador (ver app.enableCors en main.ts), que
+// nunca lleva esos extras.
+function requireOrigin(errors: string[], key: string, value: string): void {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    errors.push(`${key} no es una URL válida (recibido: "${value}").`);
+    return;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    errors.push(
+      `${key} debe empezar con http:// o https:// (recibido: "${value}").`,
+    );
+    return;
+  }
+  if (url.origin !== value) {
+    errors.push(
+      `${key} debe ser un origin exacto (sin path ni trailing slash), p. ej. "https://example.com" (recibido: "${value}").`,
+    );
+  }
+}
+
 export function validate(
   // process.env / dotenv siempre entrega strings (o undefined); nunca
   // objetos ni números. Tiparlo así evita falsos positivos de
@@ -121,7 +146,7 @@ export function validate(
       'Copiá apps/backend/.env.example a apps/backend/.env',
     )
   ) {
-    requireHttpUrl(errors, 'CORS_ORIGIN', corsOrigin);
+    requireOrigin(errors, 'CORS_ORIGIN', corsOrigin);
   }
 
   if (errors.length > 0 || databaseUrl === undefined) {
