@@ -51,6 +51,15 @@ pnpm build:frontend
 # lint
 pnpm lint:frontend
 
+# tests (Vitest + Testing Library)
+pnpm test:frontend
+
+# tests in watch mode
+pnpm --filter frontend test:watch
+
+# tests with coverage (text + lcov, lcov.info es lo que lee Sonar)
+pnpm --filter frontend test:cov
+
 # build
 pnpm build:frontend
 ```
@@ -64,6 +73,8 @@ Global CSS is imported from `src/index.css`:
 ```css
 @import 'tailwindcss';
 ```
+
+Vitest is configured inside the same `vite.config.ts` (via `defineConfig` from `vitest/config`), so it shares the `@` alias and plugins with the Vite dev/build config. `environment: 'jsdom'` and `globals: true` let specs use `describe`/`it`/`expect` without imports; `src/test/setup.ts` (loaded via `setupFiles`) registers the `@testing-library/jest-dom` matchers.
 
 The main TypeScript configuration for the app lives in `tsconfig.app.json` and extends the shared React base from the monorepo:
 
