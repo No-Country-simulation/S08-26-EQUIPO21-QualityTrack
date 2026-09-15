@@ -1,5 +1,15 @@
 # S08-26-EQUIPO21-QualityTrack
 
+### Backend
+
+[![Quality Gate Status](https://sonar.ingenial.co/api/project_badges/measure?project=qualitytrack-backend&metric=alert_status&token=sqb_577199649800d6ed2c1c3548c0044450c1d1af24)](https://sonar.ingenial.co/dashboard?id=qualitytrack-backend)
+[![Coverage](https://sonar.ingenial.co/api/project_badges/measure?project=qualitytrack-backend&metric=coverage&token=sqb_577199649800d6ed2c1c3548c0044450c1d1af24)](https://sonar.ingenial.co/dashboard?id=qualitytrack-backend)
+
+### Frontend
+
+[![Quality Gate Status](https://sonar.ingenial.co/api/project_badges/measure?project=qualitytrack-frontend&metric=alert_status&token=sqb_ffaf8d0af93e810118996c453d2db9d397a906b9)](https://sonar.ingenial.co/dashboard?id=qualitytrack-frontend)
+[![Coverage](https://sonar.ingenial.co/api/project_badges/measure?project=qualitytrack-frontend&metric=coverage&token=sqb_ffaf8d0af93e810118996c453d2db9d397a906b9)](https://sonar.ingenial.co/dashboard?id=qualitytrack-frontend)
+
 ## Descripción / Contexto
 
 La empresa se dedica al **mecanizado de piezas para clientes industriales**. Cada trabajo comienza a partir de una solicitud de un cliente que requiere fabricar o mecanizar una determinada pieza de acuerdo con especificaciones técnicas.
@@ -96,3 +106,20 @@ El objetivo es construir una fuente única de información para cada trabajo, do
 ## ✅ Criterio de éxito del proyecto
 
 El proyecto será exitoso si un usuario puede tomar una Orden de Trabajo y, sin necesidad de buscar información en diferentes sistemas, planillas o carpetas, reconstruir el historial completo del trabajo y acceder a la documentación asociada.
+
+---
+
+## 🛠️ Stack
+
+TypeScript en todo el monorepo (pnpm workspaces): backend con NestJS 12 + Prisma 7 + PostgreSQL, frontend con React 19 + Vite. La decisión completa y las alternativas evaluadas están en `docs/adr/0004-stack-tecnologico.md`; el modelo de datos y la máquina de estados de la Orden de Trabajo, en `docs/architecture.md`.
+
+CI/CD corre en GitHub Actions (`.github/workflows/ci-cd.yml`): lint + tests + análisis de calidad (SonarQube, badges arriba) en cada PR, y deploy a Railway en cada push a `main`. Detalle en `docs/adr/0012-cicd-y-despliegue.md`.
+
+## 🚀 Cómo levantar el proyecto
+
+Instrucciones completas de puesta en marcha, variables de entorno y scripts de cada app:
+
+- Backend: `apps/backend/README.md`
+- Frontend: `apps/frontend/README.md`
+
+Contexto de arquitectura, convenciones de código y reglas de dominio que no deben romperse: `CLAUDE.md`.
