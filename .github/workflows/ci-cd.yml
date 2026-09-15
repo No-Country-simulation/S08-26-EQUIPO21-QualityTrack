@@ -203,6 +203,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm --filter frontend lint
+      - run: pnpm --filter frontend test:cov
       - run: pnpm --filter frontend build
 
       - name: SonarQube Scan (frontend)
