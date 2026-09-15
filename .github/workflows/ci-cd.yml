@@ -129,6 +129,21 @@ jobs:
         with:
           projectBaseDir: apps/backend
 
+      # Hace fallar el job si el Quality Gate de SonarCloud no pasa --
+      # sin este step, el scan de arriba solo sube el análisis, pero
+      # nunca rompe el CI aunque el gate esté en rojo. El gate en sí
+      # (el 80% de cobertura en New Code, "Sonar Way" por default) se
+      # configura en SonarCloud (Project → Quality Gates), no acá.
+      # No necesita `scanMetadataReportFile`: lo toma del report-task.txt
+      # que dejó el scan de arriba (mismo job, mismo checkout).
+      - name: SonarQube Quality Gate (backend)
+        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
   deploy-backend:
     needs: backend-ci
     # Solo push a main (nunca develop, nunca pull_request) y solo si
@@ -207,10 +222,18 @@ jobs:
       - run: pnpm --filter frontend build
 
       - name: SonarQube Scan (frontend)
-        if: ${{ env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != '' }}
+        if: ${{ env.SONAR_TOKEN_FRONTEND != '' && env.SONAR_HOST_URL != '' }}
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           projectBaseDir: apps/frontend
+
+      - name: SonarQube Quality Gate (frontend)
+        if: ${{ env.SONAR_TOKEN_FRONTEND != '' && env.SONAR_HOST_URL != '' }}
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
