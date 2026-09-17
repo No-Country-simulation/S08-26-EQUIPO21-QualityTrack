@@ -21,7 +21,7 @@ describe('StatusHistoryRepository', () => {
   let prisma: {
     workOrder: {
       findUnique: ReturnType<typeof vi.fn>;
-      update: ReturnType<typeof vi.fn>;
+      updateMany: ReturnType<typeof vi.fn>;
     };
     statusHistory: {
       count: ReturnType<typeof vi.fn>;
@@ -32,7 +32,7 @@ describe('StatusHistoryRepository', () => {
 
   beforeEach(async () => {
     prisma = {
-      workOrder: { findUnique: vi.fn(), update: vi.fn() },
+      workOrder: { findUnique: vi.fn(), updateMany: vi.fn() },
       statusHistory: { count: vi.fn(), create: vi.fn(), findMany: vi.fn() },
     };
 
@@ -85,17 +85,32 @@ describe('StatusHistoryRepository', () => {
   });
 
   describe('updateWorkOrderStatus', () => {
-    it('actualiza work_order.status', async () => {
-      const updated = buildWorkOrder({ status: WorkOrderStatus.routed });
-      prisma.workOrder.update.mockResolvedValue(updated);
+    it('actualiza work_order.status condicionado al status previo (optimistic concurrency)', async () => {
+      prisma.workOrder.updateMany.mockResolvedValue({ count: 1 });
 
       await expect(
-        repo.updateWorkOrderStatus(WO_ID, WorkOrderStatus.routed),
-      ).resolves.toBe(updated);
-      expect(prisma.workOrder.update).toHaveBeenCalledWith({
-        where: { id: WO_ID },
+        repo.updateWorkOrderStatus(
+          WO_ID,
+          WorkOrderStatus.created,
+          WorkOrderStatus.routed,
+        ),
+      ).resolves.toBe(true);
+      expect(prisma.workOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: WO_ID, status: WorkOrderStatus.created },
         data: { status: WorkOrderStatus.routed },
       });
+    });
+
+    it('devuelve false cuando otra transición concurrente ya cambió el status', async () => {
+      prisma.workOrder.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        repo.updateWorkOrderStatus(
+          WO_ID,
+          WorkOrderStatus.created,
+          WorkOrderStatus.routed,
+        ),
+      ).resolves.toBe(false);
     });
   });
 

@@ -4,9 +4,11 @@ import { Prisma, WorkOrderStatus } from '../../generated/prisma/client';
 import type { StatusHistory, WorkOrder } from '../../generated/prisma/client';
 
 /**
- * Acceso a datos de `work_order.status` y `status_history` — las dos
- * columnas/tabla que, por ADR-0005, solo este repositorio toca. No
- * expone `update` ni `delete` sobre `status_history`: es append-only.
+ * Acceso a datos de `work_order.status` y `status_history`.
+ * Por ADR-0005, este repositorio es el único que actualiza
+ * `work_order.status` e inserta filas en `status_history` (el alta
+ * inicial con `status = created` vive en `work-orders`). No expone
+ * `update` ni `delete` sobre `status_history`: es append-only.
  *
  * Los métodos que participan de una transición aceptan un
  * `Prisma.TransactionClient` opcional: `StatusHistoryService.transition()`
@@ -37,15 +39,24 @@ export class StatusHistoryRepository {
     });
   }
 
-  updateWorkOrderStatus(
+  /**
+   * Actualiza `work_order.status` con optimistic concurrency: el `WHERE`
+   * exige que el status siga siendo `previousStatus`. Si otra transición
+   * concurrente ya movió la OT, `updateMany` no afecta filas y devuelve
+   * `false` — el llamador debe tratarlo como conflicto, no reintentar a
+   * ciegas sobre un estado que ya no es el que se validó.
+   */
+  async updateWorkOrderStatus(
     workOrderId: string,
-    status: WorkOrderStatus,
+    previousStatus: WorkOrderStatus,
+    newStatus: WorkOrderStatus,
     tx?: Prisma.TransactionClient,
-  ): Promise<WorkOrder> {
-    return (tx ?? this.prisma).workOrder.update({
-      where: { id: workOrderId },
-      data: { status },
+  ): Promise<boolean> {
+    const { count } = await (tx ?? this.prisma).workOrder.updateMany({
+      where: { id: workOrderId, status: previousStatus },
+      data: { status: newStatus },
     });
+    return count === 1;
   }
 
   createHistoryEntry(

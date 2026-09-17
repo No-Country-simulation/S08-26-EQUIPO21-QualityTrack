@@ -60,8 +60,7 @@ describe('StatusHistoryService', () => {
       repo.findWorkOrderById.mockResolvedValue(
         buildWorkOrder({ status: WorkOrderStatus.created }),
       );
-      const updated = buildWorkOrder({ status: WorkOrderStatus.routed });
-      repo.updateWorkOrderStatus.mockResolvedValue(updated);
+      repo.updateWorkOrderStatus.mockResolvedValue(true);
 
       const result = await service.transition(
         WO_ID,
@@ -69,10 +68,13 @@ describe('StatusHistoryService', () => {
         USER_ID,
       );
 
-      expect(result).toBe(updated);
+      expect(result).toEqual(
+        buildWorkOrder({ status: WorkOrderStatus.routed }),
+      );
       expect(repo.findWorkOrderById).toHaveBeenCalledWith(WO_ID, TX);
       expect(repo.updateWorkOrderStatus).toHaveBeenCalledWith(
         WO_ID,
+        WorkOrderStatus.created,
         WorkOrderStatus.routed,
         TX,
       );
@@ -86,6 +88,18 @@ describe('StatusHistoryService', () => {
         },
         TX,
       );
+    });
+
+    it('rechaza con 409 si otra transición concurrente ya cambió el status', async () => {
+      repo.findWorkOrderById.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.created }),
+      );
+      repo.updateWorkOrderStatus.mockResolvedValue(false);
+
+      await expect(
+        service.transition(WO_ID, WorkOrderEvent.Route, USER_ID),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(repo.createHistoryEntry).not.toHaveBeenCalled();
     });
 
     it('cada transición válida genera exactamente un registro de historial', async () => {
@@ -117,9 +131,7 @@ describe('StatusHistoryService', () => {
         repo.findWorkOrderById.mockResolvedValue(
           buildWorkOrder({ status: current }),
         );
-        repo.updateWorkOrderStatus.mockResolvedValue(
-          buildWorkOrder({ status: next }),
-        );
+        repo.updateWorkOrderStatus.mockResolvedValue(true);
         repo.createHistoryEntry.mockClear();
 
         await service.transition(WO_ID, event, USER_ID);
@@ -161,9 +173,7 @@ describe('StatusHistoryService', () => {
       repo.findWorkOrderById.mockResolvedValue(
         buildWorkOrder({ status: WorkOrderStatus.in_production }),
       );
-      repo.updateWorkOrderStatus.mockResolvedValue(
-        buildWorkOrder({ status: WorkOrderStatus.cancelled }),
-      );
+      repo.updateWorkOrderStatus.mockResolvedValue(true);
 
       await service.transition(WO_ID, WorkOrderEvent.Cancel, USER_ID, {
         reason: 'El cliente canceló el pedido',
@@ -171,6 +181,7 @@ describe('StatusHistoryService', () => {
 
       expect(repo.updateWorkOrderStatus).toHaveBeenCalledWith(
         WO_ID,
+        WorkOrderStatus.in_production,
         WorkOrderStatus.cancelled,
         TX,
       );
@@ -210,14 +221,13 @@ describe('StatusHistoryService', () => {
         buildWorkOrder({ status: WorkOrderStatus.nonconforming }),
       );
       repo.countNonconforming.mockResolvedValue(3);
-      repo.updateWorkOrderStatus.mockResolvedValue(
-        buildWorkOrder({ status: WorkOrderStatus.in_production }),
-      );
+      repo.updateWorkOrderStatus.mockResolvedValue(true);
 
       await service.transition(WO_ID, WorkOrderEvent.Reprocess, USER_ID);
 
       expect(repo.updateWorkOrderStatus).toHaveBeenCalledWith(
         WO_ID,
+        WorkOrderStatus.nonconforming,
         WorkOrderStatus.in_production,
         TX,
       );
@@ -235,9 +245,7 @@ describe('StatusHistoryService', () => {
         buildWorkOrder({ status: WorkOrderStatus.nonconforming }),
       );
       repo.countNonconforming.mockResolvedValue(4);
-      repo.updateWorkOrderStatus.mockResolvedValue(
-        buildWorkOrder({ status: WorkOrderStatus.cancelled }),
-      );
+      repo.updateWorkOrderStatus.mockResolvedValue(true);
 
       const result = await service.transition(
         WO_ID,
@@ -248,6 +256,7 @@ describe('StatusHistoryService', () => {
       expect(result.status).toBe(WorkOrderStatus.cancelled);
       expect(repo.updateWorkOrderStatus).toHaveBeenCalledWith(
         WO_ID,
+        WorkOrderStatus.nonconforming,
         WorkOrderStatus.cancelled,
         TX,
       );

@@ -87,16 +87,26 @@ export class StatusHistoryService {
         );
       }
 
-      const updated = await this.repository.updateWorkOrderStatus(
+      const applied = await this.repository.updateWorkOrderStatus(
         workOrderId,
+        previousStatus,
         newStatus,
         tx,
       );
+      if (!applied) {
+        // Otra transición concurrente ya movió la OT desde que se leyó
+        // `previousStatus` — evita perder un update o dejar `status_history`
+        // con una fila que no refleja la secuencia real de `status`.
+        throw new ConflictException(
+          `La orden de trabajo "${workOrderId}" cambió de estado ` +
+            'concurrentemente. Reintente la operación.',
+        );
+      }
       await this.repository.createHistoryEntry(
         { workOrderId, userId, previousStatus, newStatus, reason },
         tx,
       );
-      return updated;
+      return { ...workOrder, status: newStatus };
     });
   }
 
