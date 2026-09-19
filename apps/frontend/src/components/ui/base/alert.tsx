@@ -8,13 +8,19 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: 'bg-card text-card-foreground',
+        // Paleta corregida de QualityTrack (ver docs/adr/0013-mynaui-kit-ui.md,
+        // anexo "paleta corregida"): Tailwind estándar, no los hex del
+        // mockup -- esos eran tokens placeholder sin reemplazar por la marca.
         destructive:
-          'bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current',
-        info: 'border-blue-200 bg-blue-50 text-blue-800 *:data-[slot=alert-description]:text-blue-800/90',
+          'border-rose-200 bg-rose-50 text-rose-700 *:data-[slot=alert-description]:text-rose-700/90',
+        info: 'border-blue-200 bg-blue-50 text-blue-700 *:data-[slot=alert-description]:text-blue-700/90',
         success:
-          'border-green-200 bg-green-50 text-green-800 *:data-[slot=alert-description]:text-green-800/90',
+          'border-emerald-200 bg-emerald-50 text-emerald-700 *:data-[slot=alert-description]:text-emerald-700/90',
+        // amber-800, no amber-700: sobre bg-amber-100 (más oscuro que el
+        // amber-50 de los otros tres) hace falta ese salto extra para
+        // mantener el mismo contraste de texto ~4.5:1.
         warning:
-          'border-amber-200 bg-amber-50 text-amber-800 *:data-[slot=alert-description]:text-amber-800/90',
+          'border-amber-200 bg-amber-100 text-amber-800 *:data-[slot=alert-description]:text-amber-800/90',
       },
     },
     defaultVariants: {
