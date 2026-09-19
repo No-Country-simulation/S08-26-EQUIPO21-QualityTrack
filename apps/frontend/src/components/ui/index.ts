@@ -36,7 +36,6 @@ export {
   TableHeader,
   TableRow,
 } from './base/table';
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './base/tabs';
 
 // Propios: sin primitivo equivalente en shadcn/ui ni en MynaUI (ver ADR-0013).
 export {
@@ -48,3 +47,10 @@ export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { Field, type FieldProps } from './Field';
 export { SearchInput, type SearchInputProps } from './SearchInput';
+export {
+  Tabs,
+  type TabsListProps,
+  type TabsPanelProps,
+  type TabsProps,
+  type TabsTriggerProps,
+} from './Tabs';

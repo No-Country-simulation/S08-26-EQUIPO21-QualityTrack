@@ -27,9 +27,6 @@ import {
   SearchInput,
   Skeleton,
   Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   type DataTableColumn,
 } from '@/components/ui';
 
@@ -126,16 +123,16 @@ export function KitchenSinkPage() {
 
       <Section title="Tabs">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList aria-label="Ejemplo de pestañas">
-            <TabsTrigger value="primeros">Solicitudes</TabsTrigger>
-            <TabsTrigger value="segundos">Cotizaciones</TabsTrigger>
-          </TabsList>
-          <TabsContent value="primeros" className="p-4">
+          <Tabs.List aria-label="Ejemplo de pestañas">
+            <Tabs.Trigger value="primeros">Solicitudes</Tabs.Trigger>
+            <Tabs.Trigger value="segundos">Cotizaciones</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Panel value="primeros" className="p-4">
             Contenido de solicitudes.
-          </TabsContent>
-          <TabsContent value="segundos" className="p-4">
+          </Tabs.Panel>
+          <Tabs.Panel value="segundos" className="p-4">
             Contenido de cotizaciones.
-          </TabsContent>
+          </Tabs.Panel>
         </Tabs>
       </Section>
 
