@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import { EmptyState } from './EmptyState';
 import { Skeleton } from './base/skeleton';
@@ -37,6 +37,42 @@ export function DataTable<T>({
   emptyMessage = 'No hay resultados.',
   className,
 }: DataTableProps<T>) {
+  const skeletonRowKeys = useMemo(
+    () => Array.from({ length: SKELETON_ROWS }, () => crypto.randomUUID()),
+    [],
+  );
+
+  let body: ReactNode;
+  if (isLoading) {
+    body = skeletonRowKeys.map((rowKey) => (
+      <TableRow key={rowKey}>
+        {columns.map((column) => (
+          <TableCell key={column.key}>
+            <Skeleton className="h-4 w-full" />
+          </TableCell>
+        ))}
+      </TableRow>
+    ));
+  } else if (rows.length === 0) {
+    body = (
+      <TableRow>
+        <TableCell colSpan={columns.length}>
+          <EmptyState title={emptyMessage} />
+        </TableCell>
+      </TableRow>
+    );
+  } else {
+    body = rows.map((row) => (
+      <TableRow key={getRowKey(row)}>
+        {columns.map((column) => (
+          <TableCell key={column.key} className={column.className}>
+            {column.render(row)}
+          </TableCell>
+        ))}
+      </TableRow>
+    ));
+  }
+
   return (
     <Table className={className}>
       <TableHeader>
@@ -48,35 +84,7 @@ export function DataTable<T>({
           ))}
         </TableRow>
       </TableHeader>
-      <TableBody>
-        {isLoading ? (
-          Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
-            <TableRow key={rowIndex}>
-              {columns.map((column) => (
-                <TableCell key={column.key}>
-                  <Skeleton className="h-4 w-full" />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
-        ) : rows.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={columns.length}>
-              <EmptyState title={emptyMessage} />
-            </TableCell>
-          </TableRow>
-        ) : (
-          rows.map((row) => (
-            <TableRow key={getRowKey(row)}>
-              {columns.map((column) => (
-                <TableCell key={column.key} className={column.className}>
-                  {column.render(row)}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
-        )}
-      </TableBody>
+      <TableBody>{body}</TableBody>
     </Table>
   );
 }
