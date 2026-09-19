@@ -8,9 +8,9 @@ export interface SearchInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'onChange' | 'value' | 'type' | 'defaultValue'
 > {
-  defaultValue?: string;
-  onSearch: (value: string) => void;
-  debounceMs?: number;
+  readonly defaultValue?: string;
+  readonly onSearch: (value: string) => void;
+  readonly debounceMs?: number;
 }
 
 /**

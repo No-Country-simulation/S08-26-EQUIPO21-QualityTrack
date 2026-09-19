@@ -12,31 +12,23 @@ import {
 } from './base/table';
 
 export interface DataTableColumn<T> {
-  key: string;
-  header: ReactNode;
-  render: (row: T) => ReactNode;
-  className?: string;
+  readonly key: string;
+  readonly header: ReactNode;
+  readonly render: (row: T) => ReactNode;
+  readonly className?: string;
 }
 
 export interface DataTableProps<T> {
-  columns: DataTableColumn<T>[];
-  rows: T[];
-  getRowKey: (row: T) => string;
-  isLoading?: boolean;
-  emptyMessage?: string;
-  className?: string;
+  readonly columns: DataTableColumn<T>[];
+  readonly rows: T[];
+  readonly getRowKey: (row: T) => string;
+  readonly isLoading?: boolean;
+  readonly emptyMessage?: string;
+  readonly className?: string;
 }
 
 const SKELETON_ROWS = 3;
 
-/**
- * `columns` como datos, no como JSX suelto: cada feature aporta su propio
- * `columns[]` (ver docs/frontend-structure.md §3) sin duplicar el marcado
- * ni los estados de carga/vacío. Ningún primitivo de shadcn/ui o MynaUI
- * ofrece esta abstracción genérica -- son piezas de `<table>` sueltas
- * (`Table`/`TableHeader`/`TableBody`/`TableRow`/`TableHead`/`TableCell`),
- * este wrapper sigue siendo propio del proyecto.
- */
 export function DataTable<T>({
   columns,
   rows,

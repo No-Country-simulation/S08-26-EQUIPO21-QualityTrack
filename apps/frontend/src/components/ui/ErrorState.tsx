@@ -3,10 +3,10 @@ import { cn } from 'cn';
 import { Button } from './base/button';
 
 export interface ErrorStateProps {
-  title?: string;
-  description?: string;
-  onRetry?: () => void;
-  className?: string;
+  readonly title?: string;
+  readonly description?: string;
+  readonly onRetry?: () => void;
+  readonly className?: string;
 }
 
 export function ErrorState({

@@ -4,18 +4,18 @@ import { cloneElement, isValidElement, useId, type ReactElement } from 'react';
 import { Label } from './base/label';
 
 interface FieldControlProps {
-  id?: string;
-  'aria-describedby'?: string;
-  'aria-invalid'?: boolean;
+  readonly id?: string;
+  readonly 'aria-describedby'?: string;
+  readonly 'aria-invalid'?: boolean;
 }
 
 export interface FieldProps {
-  label: string;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  children: ReactElement<FieldControlProps>;
-  className?: string;
+  readonly label: string;
+  readonly error?: string;
+  readonly hint?: string;
+  readonly required?: boolean;
+  readonly children: ReactElement<FieldControlProps>;
+  readonly className?: string;
 }
 
 /**

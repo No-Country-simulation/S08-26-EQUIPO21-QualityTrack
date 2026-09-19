@@ -274,7 +274,13 @@ export function KitchenSinkPage() {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
   return (
     <section>
       <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
