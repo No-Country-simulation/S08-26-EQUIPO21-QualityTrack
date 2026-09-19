@@ -5,12 +5,9 @@ import {
 } from '@nestjs/common';
 import { CustomersRepository } from './customers.repository';
 import { RequestsRepository } from './requests.repository';
+import type { RequestWithCustomer } from './requests.repository';
 import { CreateRequestDto } from './dto/create-request.dto';
-import type { Prisma, Request } from '../../generated/prisma/client';
-
-type RequestWithCustomer = Prisma.RequestGetPayload<{
-  include: { customer: true };
-}>;
+import type { Request } from '../../generated/prisma/client';
 
 /**
  * Alta y consulta de solicitudes (`REQUEST`), área Comercial. Una
@@ -50,7 +47,7 @@ export class RequestsService {
     });
   }
 
-  findAll(pendingQuote = false): Promise<Request[]> {
+  findAll(pendingQuote = false): Promise<RequestWithCustomer[]> {
     return this.requests.findMany({ pendingQuote });
   }
 

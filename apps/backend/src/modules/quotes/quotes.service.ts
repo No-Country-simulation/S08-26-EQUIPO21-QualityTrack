@@ -7,14 +7,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { QuotesRepository } from './quotes.repository';
 import type { QuoteWithRelations } from './quotes.repository';
 import { RequestsRepository } from './requests.repository';
+import type { RequestWithCustomer } from './requests.repository';
 import { WorkOrdersService } from '../work-orders/work-orders.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { QuoteStatus } from '../../generated/prisma/client';
-import type { Prisma, Quote, Request } from '../../generated/prisma/client';
+import type { Prisma, Quote } from '../../generated/prisma/client';
 
 export interface CommercialPanel {
   /** Solicitudes que todavía no tienen cotización — pendientes de cotizar. */
-  requestsPendingQuote: Request[];
+  requestsPendingQuote: RequestWithCustomer[];
   /** Cotizaciones esperando que Comercial registre aprobación o rechazo. */
   quotesPendingApproval: QuoteWithRelations[];
 }
