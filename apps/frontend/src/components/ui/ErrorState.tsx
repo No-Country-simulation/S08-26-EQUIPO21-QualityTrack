@@ -1,6 +1,6 @@
-import { cn } from '@/lib/cn';
+import { cn } from 'cn';
 
-import { Button } from './Button';
+import { Button } from './base/button';
 
 export interface ErrorStateProps {
   title?: string;
@@ -23,8 +23,10 @@ export function ErrorState({
         className,
       )}
     >
-      <p className="text-sm font-medium text-red-700">{title}</p>
-      {description && <p className="text-sm text-gray-500">{description}</p>}
+      <p className="text-sm font-medium text-destructive">{title}</p>
+      {description && (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      )}
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry} className="mt-2">
           Reintentar

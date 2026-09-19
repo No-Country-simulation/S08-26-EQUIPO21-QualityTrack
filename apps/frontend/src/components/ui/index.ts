@@ -1,23 +1,50 @@
-export { Alert, type AlertProps, type AlertVariant } from './Alert';
-export { Badge, type BadgeProps, type BadgeVariant } from './Badge';
+// Primitivos de shadcn/ui (base Radix UI, ver ADR-0013) -- vendorizados en ./base.
+export { Alert, AlertAction, AlertDescription, AlertTitle } from './base/alert';
+export { Badge, badgeVariants } from './base/badge';
+export { Button, buttonVariants } from './base/button';
 export {
-  Button,
-  type ButtonProps,
-  type ButtonSize,
-  type ButtonVariant,
-} from './Button';
-export { Dialog, type DialogProps } from './Dialog';
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from './base/dialog';
+export { Input } from './base/input';
+export { Label } from './base/label';
+export {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from './base/pagination';
+export { Skeleton } from './base/skeleton';
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './base/table';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './base/tabs';
+
+// Propios: sin primitivo equivalente en shadcn/ui ni en MynaUI (ver ADR-0013).
+export {
+  DataTable,
+  type DataTableColumn,
+  type DataTableProps,
+} from './DataTable';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { Field, type FieldProps } from './Field';
-export { Pagination, type PaginationProps } from './Pagination';
 export { SearchInput, type SearchInputProps } from './SearchInput';
-export { Skeleton, type SkeletonProps } from './Skeleton';
-export { Table, type TableColumn, type TableProps } from './Table';
-export {
-  Tabs,
-  type TabsListProps,
-  type TabsProps,
-  type TabsTriggerProps,
-  type TabsPanelProps,
-} from './Tabs';

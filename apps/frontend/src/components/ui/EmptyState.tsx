@@ -1,6 +1,5 @@
+import { cn } from 'cn';
 import type { ReactNode } from 'react';
-
-import { cn } from '@/lib/cn';
 
 export interface EmptyStateProps {
   title: string;
@@ -22,8 +21,10 @@ export function EmptyState({
         className,
       )}
     >
-      <p className="text-sm font-medium text-gray-900">{title}</p>
-      {description && <p className="text-sm text-gray-500">{description}</p>}
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      {description && (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      )}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );

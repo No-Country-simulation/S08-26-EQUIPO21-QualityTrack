@@ -2,37 +2,52 @@ import { useState, type ReactNode } from 'react';
 
 import {
   Alert,
+  AlertDescription,
+  AlertTitle,
   Badge,
   Button,
+  DataTable,
   Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   EmptyState,
   ErrorState,
   Field,
+  Input,
   Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
   SearchInput,
   Skeleton,
-  Table,
   Tabs,
-  type AlertVariant,
-  type BadgeVariant,
-  type ButtonVariant,
-  type TableColumn,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  type DataTableColumn,
 } from '@/components/ui';
 
-const ALERT_VARIANTS: AlertVariant[] = ['info', 'success', 'warning', 'danger'];
-const BADGE_VARIANTS: BadgeVariant[] = [
-  'neutral',
-  'info',
-  'success',
-  'warning',
-  'danger',
-];
-const BUTTON_VARIANTS: ButtonVariant[] = [
-  'primary',
+const ALERT_VARIANTS = ['info', 'success', 'warning', 'destructive'] as const;
+const BADGE_VARIANTS = [
+  'default',
+  'secondary',
+  'outline',
+  'destructive',
+] as const;
+const BUTTON_VARIANTS = [
+  'default',
   'secondary',
   'destructive',
   'outline',
-];
+  'ghost',
+  'link',
+] as const;
 
 interface SampleRow {
   id: string;
@@ -40,12 +55,12 @@ interface SampleRow {
   status: string;
 }
 
-const sampleColumns: TableColumn<SampleRow>[] = [
+const sampleColumns: DataTableColumn<SampleRow>[] = [
   { key: 'client', header: 'Cliente', render: (row) => row.client },
   {
     key: 'status',
     header: 'Estado',
-    render: (row) => <Badge variant="info">{row.status}</Badge>,
+    render: (row) => <Badge variant="secondary">{row.status}</Badge>,
   },
 ];
 
@@ -56,24 +71,21 @@ const sampleRows: SampleRow[] = [
 
 /**
  * Página de desarrollo (no forma parte del flujo de negocio ni del Sidebar)
- * que muestra todas las variantes y estados del kit UI atómico — issue #67.
- * Sirve como checklist visual, no reemplaza los tests de render por
- * componente.
+ * que muestra todas las variantes y estados del kit UI -- issue #67, sobre
+ * shadcn/ui + MynaUI (ver ADR-0013). Sirve como checklist visual, no
+ * reemplaza los tests de render por componente.
  */
 export function KitchenSinkPage() {
   const [tableState, setTableState] = useState<'loading' | 'empty' | 'success'>(
     'success',
   );
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [tab, setTab] = useState('primeros');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
   return (
     <main className="flex flex-col gap-10 p-8">
-      <h1 className="text-2xl font-semibold text-gray-900">
-        Kit UI — kitchen sink
-      </h1>
+      <h1 className="text-2xl font-semibold">Kit UI — kitchen sink</h1>
 
       <Section title="Button">
         <div className="flex flex-wrap items-center gap-3">
@@ -102,8 +114,11 @@ export function KitchenSinkPage() {
       <Section title="Alert">
         <div className="flex flex-col gap-3">
           {ALERT_VARIANTS.map((variant) => (
-            <Alert key={variant} variant={variant} title={`Alert ${variant}`}>
-              Mensaje de ejemplo para la variante {variant}.
+            <Alert key={variant} variant={variant}>
+              <AlertTitle>Alert {variant}</AlertTitle>
+              <AlertDescription>
+                Mensaje de ejemplo para la variante {variant}.
+              </AlertDescription>
             </Alert>
           ))}
         </div>
@@ -111,23 +126,23 @@ export function KitchenSinkPage() {
 
       <Section title="Tabs">
         <Tabs value={tab} onValueChange={setTab}>
-          <Tabs.List aria-label="Ejemplo de pestañas">
-            <Tabs.Trigger value="primeros">Solicitudes</Tabs.Trigger>
-            <Tabs.Trigger value="segundos">Cotizaciones</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Panel value="primeros" className="p-4 text-sm text-gray-600">
+          <TabsList aria-label="Ejemplo de pestañas">
+            <TabsTrigger value="primeros">Solicitudes</TabsTrigger>
+            <TabsTrigger value="segundos">Cotizaciones</TabsTrigger>
+          </TabsList>
+          <TabsContent value="primeros" className="p-4">
             Contenido de solicitudes.
-          </Tabs.Panel>
-          <Tabs.Panel value="segundos" className="p-4 text-sm text-gray-600">
+          </TabsContent>
+          <TabsContent value="segundos" className="p-4">
             Contenido de cotizaciones.
-          </Tabs.Panel>
+          </TabsContent>
         </Tabs>
       </Section>
 
       <Section title="SearchInput">
         <div className="max-w-sm">
           <SearchInput onSearch={setSearch} />
-          <p className="mt-2 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             Último término buscado: {search || '(vacío)'}
           </p>
         </div>
@@ -136,10 +151,10 @@ export function KitchenSinkPage() {
       <Section title="Field">
         <div className="flex max-w-sm flex-col gap-4">
           <Field label="Cliente" hint="Buscá por nombre o CUIT">
-            <input className="rounded border border-gray-300 px-3 py-2 text-sm" />
+            <Input />
           </Field>
           <Field label="Email" required error="Formato de email inválido">
-            <input className="rounded border border-gray-300 px-3 py-2 text-sm" />
+            <Input />
           </Field>
         </div>
       </Section>
@@ -168,31 +183,31 @@ export function KitchenSinkPage() {
         />
       </Section>
 
-      <Section title="Table">
+      <Section title="DataTable">
         <div className="mb-3 flex gap-2">
           <Button
             size="sm"
-            variant={tableState === 'success' ? 'primary' : 'outline'}
+            variant={tableState === 'success' ? 'default' : 'outline'}
             onClick={() => setTableState('success')}
           >
             con datos
           </Button>
           <Button
             size="sm"
-            variant={tableState === 'loading' ? 'primary' : 'outline'}
+            variant={tableState === 'loading' ? 'default' : 'outline'}
             onClick={() => setTableState('loading')}
           >
             cargando
           </Button>
           <Button
             size="sm"
-            variant={tableState === 'empty' ? 'primary' : 'outline'}
+            variant={tableState === 'empty' ? 'default' : 'outline'}
             onClick={() => setTableState('empty')}
           >
             vacía
           </Button>
         </div>
-        <Table
+        <DataTable
           columns={sampleColumns}
           rows={tableState === 'empty' ? [] : sampleRows}
           getRowKey={(row) => row.id}
@@ -201,28 +216,61 @@ export function KitchenSinkPage() {
       </Section>
 
       <Section title="Pagination">
-        <Pagination page={page} totalPages={5} onPageChange={setPage} />
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage((current) => Math.max(1, current - 1));
+                }}
+              />
+            </PaginationItem>
+            {[1, 2, 3].map((pageNumber) => (
+              <PaginationItem key={pageNumber}>
+                <PaginationLink
+                  href="#"
+                  isActive={page === pageNumber}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setPage(pageNumber);
+                  }}
+                >
+                  {pageNumber}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage((current) => Math.min(3, current + 1));
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </Section>
 
       <Section title="Dialog">
-        <Button onClick={() => setDialogOpen(true)}>Cancelar OT</Button>
-        <Dialog
-          open={dialogOpen}
-          onClose={() => setDialogOpen(false)}
-          title="Cancelar orden de trabajo"
-        >
-          <p className="mb-4 text-sm text-gray-600">
-            Esta acción es terminal (ADR-0006). Ingresá un motivo antes de
-            confirmar.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Volver
-            </Button>
-            <Button variant="destructive" onClick={() => setDialogOpen(false)}>
-              Confirmar cancelación
-            </Button>
-          </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>Cancelar OT</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancelar orden de trabajo</DialogTitle>
+              <DialogDescription>
+                Esta acción es terminal (ADR-0006). Ingresá un motivo antes de
+                confirmar.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="destructive">Confirmar cancelación</Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </Section>
     </main>
@@ -232,7 +280,7 @@ export function KitchenSinkPage() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-sm font-semibold tracking-wide text-gray-500 uppercase">
+      <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
         {title}
       </h2>
       {children}

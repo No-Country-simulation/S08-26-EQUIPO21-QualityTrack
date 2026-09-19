@@ -1,6 +1,8 @@
+import { Search } from '@mynaui/icons-react';
+import { cn } from 'cn';
 import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
 
-import { cn } from '@/lib/cn';
+import { Input } from './base/input';
 
 export interface SearchInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -13,7 +15,9 @@ export interface SearchInputProps extends Omit<
 
 /**
  * Input de búsqueda con debounce: `onSearch` se dispara `debounceMs`
- * después de la última tecla, no en cada `onChange`.
+ * después de la última tecla, no en cada `onChange`. Ningún primitivo de
+ * shadcn/ui o MynaUI resuelve esto genérico, así que sigue siendo propio
+ * -- construido sobre el `Input` de shadcn/ui.
  */
 export function SearchInput({
   defaultValue = '',
@@ -37,27 +41,17 @@ export function SearchInput({
 
   return (
     <div className={cn('relative', className)}>
-      <svg
+      <Search
         aria-hidden="true"
-        viewBox="0 0 20 20"
-        fill="none"
-        className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400"
-      >
-        <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
-        <path
-          d="m17 17-4-4"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-      <input
+        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+      <Input
         type="search"
         role="searchbox"
         value={value}
         onChange={(event) => setValue(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded border border-gray-300 py-2 pr-3 pl-9 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+        className="pl-8"
         {...props}
       />
     </div>

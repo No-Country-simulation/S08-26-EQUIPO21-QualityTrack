@@ -1,6 +1,7 @@
+import { cn } from 'cn';
 import { cloneElement, isValidElement, useId, type ReactElement } from 'react';
 
-import { cn } from '@/lib/cn';
+import { Label } from './base/label';
 
 interface FieldControlProps {
   id?: string;
@@ -39,10 +40,10 @@ export function Field({
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+      <Label htmlFor={inputId}>
         {label}
-        {required && <span className="text-red-600"> *</span>}
-      </label>
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
       {isValidElement(children)
         ? cloneElement(children, {
             id: inputId,
@@ -51,12 +52,12 @@ export function Field({
           })
         : children}
       {hint && !error && (
-        <p id={hintId} className="text-xs text-gray-500">
+        <p id={hintId} className="text-xs text-muted-foreground">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-xs text-red-600">
+        <p id={errorId} role="alert" className="text-xs text-destructive">
           {error}
         </p>
       )}
