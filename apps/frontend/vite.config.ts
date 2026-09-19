@@ -33,7 +33,7 @@ export default defineConfig({
       // lee coverage/lcov.info, no la salida de texto en consola.
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/**/*.d.ts'],
+      exclude: ['src/main.tsx', 'src/dev/**', 'src/**/*.d.ts'],
     },
   },
 });
