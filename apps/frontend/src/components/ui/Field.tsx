@@ -7,6 +7,7 @@ interface FieldControlProps {
   readonly id?: string;
   readonly 'aria-describedby'?: string;
   readonly 'aria-invalid'?: boolean;
+  readonly 'aria-required'?: boolean;
 }
 
 export interface FieldProps {
@@ -49,6 +50,7 @@ export function Field({
             id: inputId,
             'aria-describedby': describedBy || undefined,
             'aria-invalid': Boolean(error),
+            'aria-required': required,
           })
         : children}
       {hint && !error && (

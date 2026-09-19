@@ -38,7 +38,8 @@ export function DataTable<T>({
   className,
 }: DataTableProps<T>) {
   const skeletonRowKeys = useMemo(
-    () => Array.from({ length: SKELETON_ROWS }, () => crypto.randomUUID()),
+    () =>
+      Array.from({ length: SKELETON_ROWS }, (_, index) => `skeleton-${index}`),
     [],
   );
 

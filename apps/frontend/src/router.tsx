@@ -16,8 +16,12 @@ function ComingSoonPage() {
 export function AppRouter() {
   return (
     <Routes>
-      {/* Sin AppLayout: es una página de desarrollo, no una pantalla de negocio. */}
-      <Route path="/kitchen-sink" element={<KitchenSinkPage />} />
+      {import.meta.env.VITE_DEV && (
+        <>
+          {/* Sin AppLayout: es una página de desarrollo, no una pantalla de negocio. */}
+          <Route path="/kitchen-sink" element={<KitchenSinkPage />} />
+        </>
+      )}
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/commercial" replace />} />
         <Route path="/commercial" element={<CommercialPage />} />
