@@ -1,81 +1,59 @@
-import React, { useState, useEffect, type ChangeEvent } from 'react';
+import { Search } from '@mynaui/icons-react';
+import { cn } from 'cn';
+import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
 
-type HTMLInputPropsClean = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  'onChange' | 'value'
->;
+import { Input } from './base/input';
 
-export interface SearchInputProps extends HTMLInputPropsClean {
-  onSearch: (value: string) => void;
-  debounceMs?: number;
-  placeholder?: string;
-  className?: string;
-  initialValue?: string;
+export interface SearchInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'onChange' | 'value' | 'type' | 'defaultValue'
+> {
+  readonly defaultValue?: string;
+  readonly onSearch: (value: string) => void;
+  readonly debounceMs?: number;
 }
 
-export const SearchInput: React.FC<SearchInputProps> = ({
+/**
+ * Input de búsqueda con debounce: `onSearch` se dispara `debounceMs`
+ * después de la última tecla, no en cada `onChange`. Ningún primitivo de
+ * shadcn/ui o MynaUI resuelve esto genérico, así que sigue siendo propio
+ * -- construido sobre el `Input` de shadcn/ui.
+ */
+export function SearchInput({
+  defaultValue = '',
   onSearch,
   debounceMs = 300,
-  placeholder = 'Buscar cliente, OT o pieza',
-  className = '',
-  initialValue = '',
+  placeholder = 'Buscar…',
+  className,
   ...props
-}) => {
-  const [searchTerm, setSearchTerm] = useState<string>(initialValue);
-  const [prevInitialValue, setPrevInitialValue] = useState<string>(initialValue);
+}: SearchInputProps) {
+  const [value, setValue] = useState(defaultValue);
+  const onSearchRef = useRef(onSearch);
 
-  // Sincronización patrón React: se ejecuta durante el render sin causar renders en cascada en un useEffect
-  if (initialValue !== prevInitialValue) {
-    setPrevInitialValue(initialValue);
-    setSearchTerm(initialValue);
-  }
-
-  // Aplica debounce antes de invocar el callback onSearch
   useEffect(() => {
-    const handler = setTimeout(() => {
-      onSearch(searchTerm);
-    }, debounceMs);
+    onSearchRef.current = onSearch;
+  });
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm, debounceMs, onSearch]);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
+  useEffect(() => {
+    const timeoutId = setTimeout(() => onSearchRef.current(value), debounceMs);
+    return () => clearTimeout(timeoutId);
+  }, [value, debounceMs]);
 
   return (
-    <div className={`relative inline-flex items-center w-full max-w-xs ${className}`}>
-      {/* Ícono de Lupa (SVG Accesible) */}
-      <div className="absolute left-3.5 pointer-events-none text-slate-400 flex items-center justify-center">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-      </div>
-
-      <input
+    <div className={cn('relative', className)}>
+      <Search
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+      <Input
         type="search"
         role="searchbox"
-        aria-label="Buscar cliente, OT o pieza"
-        value={searchTerm}
-        onChange={handleChange}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
         placeholder={placeholder}
-        className="w-full pl-10 pr-4 py-1.5 text-sm leading-5 rounded-full border border-slate-300 bg-white text-[var(--color-neutral-dark)] placeholder-slate-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all duration-150"
+        className="pl-8"
         {...props}
       />
     </div>
   );
-};
+}
