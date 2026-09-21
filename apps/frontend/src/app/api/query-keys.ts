@@ -8,4 +8,7 @@ export const queryKeys = {
     list: () => [...queryKeys.customers.all, 'list'] as const,
     detail: (id: string) => [...queryKeys.customers.all, 'detail', id] as const,
   },
+  commercialPanel: {
+    all: ['commercial-panel'] as const,
+  },
 };
