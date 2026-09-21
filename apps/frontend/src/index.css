@@ -5,36 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  /* Primary: Acción principal, navegación y estado operativo estándar */
-  --color-primary: #2563eb; /* blue/600 */
-
-  /* Success: Inspecciones aprobadas (Conforme) y OTs entregadas */
-  --color-success: #059669; /* emerald/600 */
-
-  /* Warning: Desvíos recuperables en planta (los 3 intentos) */
-  --color-warning: #f59e0b; /* amber/500 */
-
-  /* Destructive: Cancelaciones, 4ª falla definitiva y errores de alerta */
-  --color-destructive: #e11d48; /* rose/600 */
-
-  /* Neutral Dark: Texto principal de toda la app y la barra lateral */
-  --color-neutral-dark: #0f172a; /* slate/900 */
-
-  /* Neutral Light: Fondos de pantalla, tarjetas y celdas de tabla */
-  --color-neutral-light: #f1f5f9; /* slate/100 */
-}
-
-@theme {
-  --color-primary: var(--color-primary, #2563eb);
-  --color-success: var(--color-success, #059669);
-  --color-warning: var(--color-warning, #f59e0b);
-  --color-destructive: var(--color-destructive, #e11d48);
-  --color-neutral-dark: var(--color-neutral-dark, #0f172a);
-  --color-neutral-light: var(--color-neutral-light, #f1f5f9);
-}
-
-
 @layer base {
   * {
     box-sizing: border-box;
@@ -82,6 +52,21 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Estados semánticos de Alert */
+  --color-info: var(--color-blue-700);
+  --color-info-bg: var(--color-blue-50);
+  --color-info-border: var(--color-blue-200);
+  --color-success: var(--color-emerald-700);
+  --color-success-bg: var(--color-emerald-50);
+  --color-success-border: var(--color-emerald-200);
+  --color-warning: var(--color-amber-800);
+  --color-warning-bg: var(--color-amber-100);
+  --color-warning-border: var(--color-amber-200);
+  --color-destructive-emphasis: var(--color-rose-700);
+  --color-destructive-bg: var(--color-rose-50);
+  --color-destructive-border: var(--color-rose-200);
+
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
