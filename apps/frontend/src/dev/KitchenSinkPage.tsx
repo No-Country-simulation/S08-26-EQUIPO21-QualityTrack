@@ -260,8 +260,7 @@ export function KitchenSinkPage() {
             <DialogHeader>
               <DialogTitle>Cancelar orden de trabajo</DialogTitle>
               <DialogDescription>
-                Esta acción es terminal (ADR-0006). Ingresá un motivo antes de
-                confirmar.
+                Esta acción es terminal. Ingresar un motivo antes de confirmar.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
