@@ -37,7 +37,8 @@ const buildCustomer = (over: Partial<Customer> = {}): Customer => ({
 const buildRequest = (over: Partial<Request> = {}): Request => ({
   id: REQUEST_ID,
   customerId: CUSTOMER_ID,
-  description: 'Torneado de 20 ejes',
+  piece: 'Eje',
+  quantity: 20,
   createdAt: new Date('2026-09-08T10:00:00Z'),
   ...over,
 });
