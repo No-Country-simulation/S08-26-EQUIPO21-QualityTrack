@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { useMemo, type ReactNode } from 'react';
 
 import { EmptyState } from './EmptyState';
@@ -74,18 +75,33 @@ export function DataTable<T>({
     ));
   }
 
+  const showFooter = !isLoading && rows.length > 0;
+
   return (
-    <Table className={className}>
-      <TableHeader>
-        <TableRow>
-          {columns.map((column) => (
-            <TableHead key={column.key} className={column.className}>
-              {column.header}
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>{body}</TableBody>
-    </Table>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <Table className={className}>
+        <TableHeader>
+          <TableRow>
+            {columns.map((column) => (
+              <TableHead
+                key={column.key}
+                className={cn(
+                  'text-xs font-semibold tracking-wider text-muted-foreground uppercase',
+                  column.className,
+                )}
+              >
+                {column.header}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>{body}</TableBody>
+      </Table>
+      {showFooter && (
+        <p className="pt-3 text-xs text-muted-foreground">
+          {rows.length} {rows.length === 1 ? 'registro' : 'registros'}
+        </p>
+      )}
+    </div>
   );
 }
