@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RequestEntity } from './request.entity';
+import { RequestWithCustomerEntity } from './request.entity';
 import { QuoteWithRelationsEntity } from './quote.entity';
 
 /**
@@ -8,11 +8,12 @@ import { QuoteWithRelationsEntity } from './quote.entity';
  */
 export class CommercialPanelEntity {
   @ApiProperty({
-    type: RequestEntity,
+    type: RequestWithCustomerEntity,
     isArray: true,
-    description: 'Solicitudes que todavía no tienen cotización.',
+    description:
+      'Solicitudes que todavía no tienen cotización, con su cliente.',
   })
-  requestsPendingQuote!: RequestEntity[];
+  requestsPendingQuote!: RequestWithCustomerEntity[];
 
   @ApiProperty({
     type: QuoteWithRelationsEntity,

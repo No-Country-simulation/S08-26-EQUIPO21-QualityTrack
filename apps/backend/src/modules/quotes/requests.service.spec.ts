@@ -107,6 +107,16 @@ describe('RequestsService', () => {
       await service.findAll(true);
       expect(requests.findMany).toHaveBeenCalledWith({ pendingQuote: true });
     });
+
+    it('devuelve las solicitudes con su cliente', async () => {
+      const withCustomer = { ...buildRequest(), customer: buildCustomer() };
+      requests.findMany.mockResolvedValue([withCustomer]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([withCustomer]);
+      expect(result[0].customer.id).toBe(CUSTOMER_ID);
+    });
   });
 
   describe('findOne (AC3)', () => {
