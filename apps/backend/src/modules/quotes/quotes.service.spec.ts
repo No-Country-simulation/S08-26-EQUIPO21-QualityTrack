@@ -80,6 +80,7 @@ describe('QuotesService', () => {
       findByRequestId: vi.fn(),
       findByIdWithRelations: vi.fn(),
       findManyByStatus: vi.fn(),
+      findMany: vi.fn(),
       updateStatus: vi.fn(),
     };
     const requestsMock: Partial<Mocked<RequestsRepository>> = {
@@ -240,6 +241,35 @@ describe('QuotesService', () => {
       expect(quotes.findManyByStatus).toHaveBeenCalledWith(
         QuoteStatus.pending_approval,
       );
+    });
+  });
+
+  describe('findAll', () => {
+    it('devuelve todas las cotizaciones sin filtro', async () => {
+      const all = [
+        { ...buildQuote(), request: buildRequestWithCustomer() },
+      ] as never;
+      quotes.findMany.mockResolvedValue(all);
+
+      await expect(service.findAll()).resolves.toBe(all);
+      expect(quotes.findMany).toHaveBeenCalledWith({ status: undefined });
+    });
+
+    it('filtra por status cuando se pasa uno', async () => {
+      const approved = [
+        {
+          ...buildQuote({ status: QuoteStatus.approved }),
+          request: buildRequestWithCustomer(),
+        },
+      ] as never;
+      quotes.findMany.mockResolvedValue(approved);
+
+      await expect(service.findAll(QuoteStatus.approved)).resolves.toBe(
+        approved,
+      );
+      expect(quotes.findMany).toHaveBeenCalledWith({
+        status: QuoteStatus.approved,
+      });
     });
   });
 
