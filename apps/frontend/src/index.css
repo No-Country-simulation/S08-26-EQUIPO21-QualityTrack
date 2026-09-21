@@ -52,6 +52,21 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Estados semánticos de Alert */
+  --color-info: var(--color-blue-700);
+  --color-info-bg: var(--color-blue-50);
+  --color-info-border: var(--color-blue-200);
+  --color-success: var(--color-emerald-700);
+  --color-success-bg: var(--color-emerald-50);
+  --color-success-border: var(--color-emerald-200);
+  --color-warning: var(--color-amber-800);
+  --color-warning-bg: var(--color-amber-100);
+  --color-warning-border: var(--color-amber-200);
+  --color-destructive-emphasis: var(--color-rose-700);
+  --color-destructive-bg: var(--color-rose-50);
+  --color-destructive-border: var(--color-rose-200);
+
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
