@@ -3,11 +3,18 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { Mocked } from 'vitest';
 import { WorkOrdersService } from './work-orders.service';
 import { WorkOrdersRepository } from './work-orders.repository';
+import { RouteSheetsRepository } from './route-sheets.repository';
+import type { RouteSheetWithOperations } from './route-sheets.repository';
+import { StatusHistoryService } from '../status-history/status-history.service';
+import { WorkOrderEvent } from '../status-history/work-order-event';
+import { PrismaService } from '../../prisma/prisma.service';
 import { WorkOrderStatus } from '../../generated/prisma/client';
 import type { WorkOrder } from '../../generated/prisma/client';
 
 const QUOTE_ID = '11111111-1111-1111-1111-111111111111';
 const WO_ID = '33333333-3333-3333-3333-333333333333';
+const USER_ID = '44444444-4444-4444-4444-444444444444';
+const TX = { marker: 'tx' };
 
 const buildWorkOrder = (over: Partial<WorkOrder> = {}): WorkOrder => ({
   id: WO_ID,
@@ -21,23 +28,42 @@ const buildWorkOrder = (over: Partial<WorkOrder> = {}): WorkOrder => ({
 describe('WorkOrdersService', () => {
   let service: WorkOrdersService;
   let repo: Mocked<WorkOrdersRepository>;
+  let routeSheets: Mocked<RouteSheetsRepository>;
+  let statusHistory: Mocked<StatusHistoryService>;
 
   beforeEach(async () => {
     const repoMock: Partial<Mocked<WorkOrdersRepository>> = {
       createOriginal: vi.fn(),
       findById: vi.fn(),
       findOriginalByQuoteId: vi.fn(),
+      findMany: vi.fn(),
+    };
+    const routeSheetsMock: Partial<Mocked<RouteSheetsRepository>> = {
+      create: vi.fn(),
+      findByWorkOrderId: vi.fn(),
+    };
+    const statusHistoryMock: Partial<Mocked<StatusHistoryService>> = {
+      transition: vi.fn(),
+    };
+    // $transaction ejecuta el callback con un tx dummy, como haría Prisma.
+    const prismaMock = {
+      $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(TX)),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkOrdersService,
         { provide: WorkOrdersRepository, useValue: repoMock },
+        { provide: RouteSheetsRepository, useValue: routeSheetsMock },
+        { provide: StatusHistoryService, useValue: statusHistoryMock },
+        { provide: PrismaService, useValue: prismaMock },
       ],
     }).compile();
 
     service = module.get(WorkOrdersService);
     repo = module.get(WorkOrdersRepository);
+    routeSheets = module.get(RouteSheetsRepository);
+    statusHistory = module.get(StatusHistoryService);
   });
 
   describe('createFromApprovedQuote', () => {

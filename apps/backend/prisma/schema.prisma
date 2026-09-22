@@ -178,16 +178,28 @@ model RouteSheet {
 // -----------------------------------------------------------------------------
 
 model Operation {
-  id           String   @id @default(uuid())
-  routeSheetId String   @map("route_sheet_id")
-  type         String
-  status       String
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  // `status` de la operación muta a medida que Planta la ejecuta (épica 6):
-  // updatedAt marca el último cambio. El detalle cronológico fino
-  // (inicio/fin, quién) se decidirá si la épica 6 lo exige.
+  id               String    @id @default(uuid())
+  routeSheetId     String    @map("route_sheet_id")
+  // Orden 1..N de la operación dentro de su hoja de ruta -- necesario
+  // para mostrarlas numeradas (issue #69) y para que "avance real"
+  // tenga un orden estable (ni `id` ni `updatedAt` lo dan).
+  sequence         Int
+  type             String
+  // 'pending' | 'in_progress' | 'completed'. Sigue como String, no enum:
+  // no hay ADR que cierre este catálogo (mismo criterio que
+  // quality_control.result y document.type).
+  status           String
+  // Quién y cuándo la inició / terminó (épica 6, issue #31). Nullable:
+  // ambas quedan sin completar hasta que Planta ejecuta cada paso.
+  startedByUserId  String?   @map("started_by_user_id")
+  startedAt        DateTime? @map("started_at")
+  finishedByUserId String?   @map("finished_by_user_id")
+  finishedAt       DateTime? @map("finished_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   routeSheet RouteSheet @relation(fields: [routeSheetId], references: [id], onDelete: Restrict)
+  startedBy  AppUser?   @relation("OperationStartedBy", fields: [startedByUserId], references: [id], onDelete: Restrict)
+  finishedBy AppUser?   @relation("OperationFinishedBy", fields: [finishedByUserId], references: [id], onDelete: Restrict)
 
   @@index([routeSheetId])
   @@map("operation")
@@ -271,7 +283,9 @@ model AppUser {
   name String
   role String
 
-  statusHistory StatusHistory[]
+  statusHistory      StatusHistory[]
+  startedOperations  Operation[]     @relation("OperationStartedBy")
+  finishedOperations Operation[]     @relation("OperationFinishedBy")
 
   @@map("app_user")
 }

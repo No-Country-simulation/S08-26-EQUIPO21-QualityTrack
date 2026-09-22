@@ -3,21 +3,36 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { WorkOrdersRepository } from './work-orders.repository';
-import type { Prisma, WorkOrder } from '../../generated/prisma/client';
+import type { WorkOrderWithRelations } from './work-orders.repository';
+import { RouteSheetsRepository } from './route-sheets.repository';
+import type { RouteSheetWithOperations } from './route-sheets.repository';
+import { StatusHistoryService } from '../status-history/status-history.service';
+import { WorkOrderEvent } from '../status-history/work-order-event';
+import type {
+  Prisma,
+  WorkOrder,
+  WorkOrderStatus,
+} from '../../generated/prisma/client';
 
 /**
- * Producción — alta y consulta básica de `WORK_ORDER` (Épica 3).
- *
- * En esta etapa el módulo solo cubre lo que necesita la aprobación de
- * una cotización: crear la OT que nace de ella. La hoja de ruta, las
- * operaciones y las transiciones de estado llegan con sus propias
- * issues (#31, #34); las transiciones se delegarán en
- * `StatusHistoryService.transition()` (ADR-0005), nunca acá.
+ * Producción — `WORK_ORDER`, `ROUTE_SHEET` y `OPERATION` (Épica 3 y
+ * Épica 6). Cubre el alta de la OT que nace de una cotización aprobada,
+ * su consulta básica, y el alta + consulta de la hoja de ruta. Las
+ * operaciones individuales (`start`/`finish`) viven en
+ * `OperationsService` — este service solo arma la hoja de ruta
+ * completa. Las transiciones de estado siempre se delegan en
+ * `StatusHistoryService.transition()` (ADR-0005), nunca se tocan acá.
  */
 @Injectable()
 export class WorkOrdersService {
-  constructor(private readonly workOrders: WorkOrdersRepository) {}
+  constructor(
+    private readonly workOrders: WorkOrdersRepository,
+    private readonly routeSheets: RouteSheetsRepository,
+    private readonly statusHistory: StatusHistoryService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Crea la OT original de una cotización aprobada. La invoca
