@@ -270,6 +270,36 @@ describe('StatusHistoryService', () => {
     });
   });
 
+  describe('transition — con tx externo', () => {
+    it('participa de la transacción recibida en vez de abrir la suya', async () => {
+      const externalTx = { marker: 'external' };
+      repo.findWorkOrderById.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.created }),
+      );
+      repo.updateWorkOrderStatus.mockResolvedValue(true);
+      const prisma = service['prisma'] as unknown as {
+        $transaction: ReturnType<typeof vi.fn>;
+      };
+
+      await service.transition(WO_ID, WorkOrderEvent.Route, USER_ID, {
+        tx: externalTx as never,
+      });
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(repo.findWorkOrderById).toHaveBeenCalledWith(WO_ID, externalTx);
+      expect(repo.updateWorkOrderStatus).toHaveBeenCalledWith(
+        WO_ID,
+        WorkOrderStatus.created,
+        WorkOrderStatus.routed,
+        externalTx,
+      );
+      expect(repo.createHistoryEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ newStatus: WorkOrderStatus.routed }),
+        externalTx,
+      );
+    });
+  });
+
   describe('history', () => {
     it('delega en el repositorio', async () => {
       repo.findByWorkOrderId.mockResolvedValue([]);
