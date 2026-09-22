@@ -14,7 +14,6 @@ const OPERATION_ID = '66666666-6666-6666-6666-666666666666';
 const ROUTE_SHEET_ID = '55555555-5555-5555-5555-555555555555';
 const WO_ID = '33333333-3333-3333-3333-333333333333';
 const USER_ID = '44444444-4444-4444-4444-444444444444';
-const TX = { marker: 'tx' };
 
 const buildOperation = (
   over: Partial<OperationWithRouteSheet> = {},
@@ -58,10 +57,21 @@ const buildUpdatedOperation = (over: Partial<Operation> = {}): Operation =>
     ...over,
   }) as unknown as Operation;
 
+const buildWorkOrder = (over: Partial<WorkOrder> = {}): WorkOrder =>
+  ({
+    id: WO_ID,
+    quoteId: '11111111-1111-1111-1111-111111111111',
+    status: WorkOrderStatus.routed,
+    createdAt: new Date('2026-09-09T10:00:00Z'),
+    replacesWorkOrderId: null,
+    ...over,
+  }) as WorkOrder;
+
 describe('OperationsService', () => {
   let service: OperationsService;
   let repo: Mocked<OperationsRepository>;
   let statusHistory: Mocked<StatusHistoryService>;
+  let tx: { workOrder: { findUniqueOrThrow: ReturnType<typeof vi.fn> } };
 
   beforeEach(async () => {
     const repoMock: Partial<Mocked<OperationsRepository>> = {
@@ -74,8 +84,13 @@ describe('OperationsService', () => {
     const statusHistoryMock: Partial<Mocked<StatusHistoryService>> = {
       transition: vi.fn(),
     };
+    // TX incluye `workOrder.findUniqueOrThrow`: lo usa
+    // `transitionIdempotently` para decidir si un 409 de `transition()`
+    // es una carrera benigna (la OT ya llegó al estado esperado) o un
+    // conflicto real.
+    tx = { workOrder: { findUniqueOrThrow: vi.fn() } };
     const prismaMock = {
-      $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(TX)),
+      $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(tx)),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -113,14 +128,14 @@ describe('OperationsService', () => {
         OPERATION_ID,
         USER_ID,
         expect.any(Date),
-        TX,
+        tx,
       );
-      expect(repo.countNotPending).toHaveBeenCalledWith(ROUTE_SHEET_ID, TX);
+      expect(repo.countNotPending).toHaveBeenCalledWith(ROUTE_SHEET_ID, tx);
       expect(statusHistory.transition).toHaveBeenCalledWith(
         WO_ID,
         WorkOrderEvent.StartProduction,
         USER_ID,
-        { tx: TX },
+        { tx },
       );
     });
 
@@ -153,6 +168,42 @@ describe('OperationsService', () => {
         NotFoundException,
       );
     });
+
+    it('no relanza el 409 de transition() si otra operación ya movió la OT a in_production (carrera benigna)', async () => {
+      repo.findById.mockResolvedValue(buildOperation());
+      const updated = buildUpdatedOperation({ status: 'in_progress' });
+      repo.start.mockResolvedValue(updated);
+      repo.countNotPending.mockResolvedValue(1);
+      statusHistory.transition.mockRejectedValue(
+        new ConflictException('carrera concurrente'),
+      );
+      tx.workOrder.findUniqueOrThrow.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.in_production }),
+      );
+
+      await expect(service.start(OPERATION_ID, USER_ID)).resolves.toBe(updated);
+      expect(tx.workOrder.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { id: WO_ID },
+      });
+    });
+
+    it('relanza el 409 de transition() si la OT terminó en otro estado (conflicto real, no una carrera benigna)', async () => {
+      repo.findById.mockResolvedValue(buildOperation());
+      repo.start.mockResolvedValue(
+        buildUpdatedOperation({ status: 'in_progress' }),
+      );
+      repo.countNotPending.mockResolvedValue(1);
+      statusHistory.transition.mockRejectedValue(
+        new ConflictException('la OT ya no está routed'),
+      );
+      tx.workOrder.findUniqueOrThrow.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.cancelled }),
+      );
+
+      await expect(service.start(OPERATION_ID, USER_ID)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
   });
 
   describe('finish', () => {
@@ -174,12 +225,12 @@ describe('OperationsService', () => {
       const result = await service.finish(OPERATION_ID, USER_ID);
 
       expect(result).toBe(updated);
-      expect(repo.countNotCompleted).toHaveBeenCalledWith(ROUTE_SHEET_ID, TX);
+      expect(repo.countNotCompleted).toHaveBeenCalledWith(ROUTE_SHEET_ID, tx);
       expect(statusHistory.transition).toHaveBeenCalledWith(
         WO_ID,
         WorkOrderEvent.SendToQualityControl,
         USER_ID,
-        { tx: TX },
+        { tx },
       );
     });
 
@@ -214,6 +265,45 @@ describe('OperationsService', () => {
       await expect(
         service.finish(OPERATION_ID, USER_ID),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('no relanza el 409 de transition() si otra operación ya movió la OT a in_quality_control (carrera benigna)', async () => {
+      repo.findById.mockResolvedValue(
+        buildOperation({ status: 'in_progress' }),
+      );
+      const updated = buildUpdatedOperation({ status: 'completed' });
+      repo.finish.mockResolvedValue(updated);
+      repo.countNotCompleted.mockResolvedValue(0);
+      statusHistory.transition.mockRejectedValue(
+        new ConflictException('carrera concurrente'),
+      );
+      tx.workOrder.findUniqueOrThrow.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.in_quality_control }),
+      );
+
+      await expect(service.finish(OPERATION_ID, USER_ID)).resolves.toBe(
+        updated,
+      );
+    });
+
+    it('relanza el 409 de transition() si la OT terminó en otro estado (conflicto real, no una carrera benigna)', async () => {
+      repo.findById.mockResolvedValue(
+        buildOperation({ status: 'in_progress' }),
+      );
+      repo.finish.mockResolvedValue(
+        buildUpdatedOperation({ status: 'completed' }),
+      );
+      repo.countNotCompleted.mockResolvedValue(0);
+      statusHistory.transition.mockRejectedValue(
+        new ConflictException('la OT ya no está in_production'),
+      );
+      tx.workOrder.findUniqueOrThrow.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.cancelled }),
+      );
+
+      await expect(
+        service.finish(OPERATION_ID, USER_ID),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 });
