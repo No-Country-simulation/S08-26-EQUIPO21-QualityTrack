@@ -135,12 +135,24 @@ describe('Hoja de ruta y operaciones (e2e)', () => {
       .post(`/work-orders/${workOrderId}/route-sheet`)
       .send({ operations: [{ type: 'Fresado' }], userId })
       .expect(409);
+
+    // El segundo intento no dejó una segunda hoja de ruta ni tocó la primera.
+    const routeSheets = await prisma.routeSheet.findMany({
+      where: { workOrderId },
+      include: { operations: true },
+    });
+    expect(routeSheets).toHaveLength(1);
+    expect(routeSheets[0].operations.map((op) => op.type)).toEqual([
+      'Torneado',
+    ]);
   });
 
   it('GET /work-orders/:id/route-sheet -> 404 si todavía no tiene una', async () => {
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .get(`/work-orders/${workOrderId}/route-sheet`)
       .expect(404);
+
+    expect(res.body.message).toContain('hoja de ruta');
   });
 
   it('GET /work-orders devuelve la OT con cliente, pieza y fecha de compromiso', async () => {
@@ -223,10 +235,12 @@ describe('Hoja de ruta y operaciones (e2e)', () => {
         .send({ userId })
         .expect(200);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .patch(`/operations/${operationIds[0]}/start`)
         .send({ userId })
         .expect(409);
+
+      expect(res.body.message).toContain('pendiente de iniciar');
     });
 
     it('bloquea el paso a control de calidad mientras queden operaciones sin completar', async () => {

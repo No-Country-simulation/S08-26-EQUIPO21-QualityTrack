@@ -79,7 +79,7 @@ describe('Cotizaciones (e2e)', () => {
   });
 
   it('POST /quotes -> 404 si la solicitud no existe', async () => {
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post('/quotes')
       .send({
         requestId: '00000000-0000-0000-0000-000000000000',
@@ -87,6 +87,8 @@ describe('Cotizaciones (e2e)', () => {
         commitmentDate: '2026-10-15',
       })
       .expect(404);
+
+    expect(res.body.message).toContain('No existe una solicitud');
   });
 
   it('POST /quotes -> 409 si la solicitud ya tiene una cotización', async () => {
@@ -99,10 +101,12 @@ describe('Cotizaciones (e2e)', () => {
       },
     });
 
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post('/quotes')
       .send({ requestId, amount: 200, commitmentDate: '2026-10-15' })
       .expect(409);
+
+    expect(res.body.message).toContain('ya tiene una cotización');
   });
 
   it('PATCH /quotes/:id/approve mueve a approved y genera la OT original', async () => {
