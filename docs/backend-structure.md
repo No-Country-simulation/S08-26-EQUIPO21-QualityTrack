@@ -73,13 +73,18 @@ apps/backend/
 │   │   │   └── entities/                # customer, request (+ request-with-customer), quote (+ with-relations, approved), commercial-panel
 │   │   │
 │   │   ├── work-orders/                 # Producción — WORK_ORDER, ROUTE_SHEET, OPERATION
-│   │   │   ├── work-orders.module.ts
-│   │   │   ├── work-orders.controller.ts   # GET /work-orders/:id — datos básicos (Épica 3)
-│   │   │   ├── work-orders.service.ts   # crear OT desde cotización aprobada (ADR-0011), hoja de ruta, operaciones;
-│   │   │   │                            #   las transiciones delegan en StatusHistoryService
+│   │   │   ├── work-orders.module.ts    # imports: [StatusHistoryModule]
+│   │   │   ├── work-orders.controller.ts   # GET / (listado, con ?status) · GET /:id · POST /:id/route-sheet · GET /:id/route-sheet
+│   │   │   ├── work-orders.service.ts   # crear OT desde cotización aprobada (ADR-0011), alta/consulta de hoja de ruta
 │   │   │   ├── work-orders.repository.ts
-│   │   │   ├── entities/                # work-order.entity
-│   │   │   └── dto/
+│   │   │   ├── route-sheets.repository.ts  # crea ROUTE_SHEET + OPERATION anidadas; ordena por sequence
+│   │   │   ├── operations.controller.ts    # PATCH /operations/:id/start · .../finish
+│   │   │   ├── operations.service.ts    # start/finish con optimistic concurrency; dispara
+│   │   │   │                            #   StartProduction (1ª operación) / SendToQualityControl (última)
+│   │   │   ├── operations.repository.ts
+│   │   │   ├── entities/                # work-order, work-order-with-relations, route-sheet (+ operations), operation
+│   │   │   └── dto/                     # create-route-sheet (operations[] + userId), operation-action (userId)
+│   │   │                                # las transiciones siempre delegan en StatusHistoryService.transition()
 │   │   │
 │   │   ├── quality/                     # Calidad — QUALITY_CONTROL
 │   │   │   ├── quality.module.ts

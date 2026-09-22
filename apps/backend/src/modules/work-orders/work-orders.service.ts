@@ -53,4 +53,60 @@ export class WorkOrdersService {
     }
     return workOrder;
   }
+
+  /**
+   * Da de alta la hoja de ruta de una OT y la transiciona `created ->
+   * routed`, en una sola transacción: si una falla, la otra se revierte
+   * (Épica 6, issue #31). `operationTypes` llega en orden de
+   * fabricación.
+   *
+   * No se valida a mano que la OT esté en `created`: la máquina de
+   * estados de `status-history` ya rechaza con 409 cualquier otro caso
+   * al intentar `WorkOrderEvent.Route` — lo mismo impide una segunda
+   * hoja de ruta, porque esa transición solo es legal una vez.
+   */
+  async createRouteSheet(
+    workOrderId: string,
+    operationTypes: string[],
+    userId: string,
+  ): Promise<RouteSheetWithOperations> {
+    await this.findOne(workOrderId);
+    return this.prisma.$transaction(async (tx) => {
+      const routeSheet = await this.routeSheets.create(
+        workOrderId,
+        operationTypes,
+        tx,
+      );
+      await this.statusHistory.transition(
+        workOrderId,
+        WorkOrderEvent.Route,
+        userId,
+        { tx },
+      );
+      return routeSheet;
+    });
+  }
+
+  /** Hoja de ruta de una OT con sus operaciones, ordenadas 1..N. */
+  async getRouteSheet(workOrderId: string): Promise<RouteSheetWithOperations> {
+    const routeSheet = await this.routeSheets.findByWorkOrderId(workOrderId);
+    if (routeSheet === null) {
+      throw new NotFoundException(
+        `La orden de trabajo "${workOrderId}" todavía no tiene hoja de ruta.`,
+      );
+    }
+    return routeSheet;
+  }
+
+  /**
+   * Listado de OT con cotización, solicitud y cliente (issue #69: el
+   * tablero de Producción). Con `status` filtra por un único estado; sin
+   * él devuelve todas. El agrupamiento en tabs ("Pendientes de ruta, En
+   * producción, En calidad") lo arma el frontend en el cliente — mismo
+   * patrón que `CommercialPage`, que agrupa Solicitudes/Cotizaciones sin
+   * pedirle al backend una respuesta pre-agrupada.
+   */
+  findAll(status?: WorkOrderStatus): Promise<WorkOrderWithRelations[]> {
+    return this.workOrders.findMany({ status });
+  }
 }

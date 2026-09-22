@@ -95,4 +95,93 @@ describe('WorkOrdersService', () => {
       );
     });
   });
+
+  describe('createRouteSheet', () => {
+    const buildRouteSheet = (): RouteSheetWithOperations =>
+      ({
+        id: '55555555-5555-5555-5555-555555555555',
+        workOrderId: WO_ID,
+        sequence: 1,
+        operations: [],
+      }) as unknown as RouteSheetWithOperations;
+
+    it('crea la hoja de ruta y transiciona la OT en la misma transacción', async () => {
+      repo.findById.mockResolvedValue(buildWorkOrder());
+      const created = buildRouteSheet();
+      routeSheets.create.mockResolvedValue(created);
+      statusHistory.transition.mockResolvedValue(
+        buildWorkOrder({ status: WorkOrderStatus.routed }),
+      );
+
+      const result = await service.createRouteSheet(
+        WO_ID,
+        ['Torneado', 'Fresado'],
+        USER_ID,
+      );
+
+      expect(result).toBe(created);
+      expect(routeSheets.create).toHaveBeenCalledWith(
+        WO_ID,
+        ['Torneado', 'Fresado'],
+        TX,
+      );
+      expect(statusHistory.transition).toHaveBeenCalledWith(
+        WO_ID,
+        WorkOrderEvent.Route,
+        USER_ID,
+        { tx: TX },
+      );
+    });
+
+    it('rechaza con 404 si la OT no existe', async () => {
+      repo.findById.mockResolvedValue(null);
+
+      await expect(
+        service.createRouteSheet(WO_ID, ['Torneado'], USER_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(routeSheets.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getRouteSheet', () => {
+    it('devuelve la hoja de ruta cuando existe', async () => {
+      const routeSheet = {
+        id: '55555555-5555-5555-5555-555555555555',
+        workOrderId: WO_ID,
+        sequence: 1,
+        operations: [],
+      } as unknown as RouteSheetWithOperations;
+      routeSheets.findByWorkOrderId.mockResolvedValue(routeSheet);
+
+      await expect(service.getRouteSheet(WO_ID)).resolves.toBe(routeSheet);
+    });
+
+    it('rechaza con 404 si la OT todavía no tiene hoja de ruta', async () => {
+      routeSheets.findByWorkOrderId.mockResolvedValue(null);
+
+      await expect(service.getRouteSheet(WO_ID)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('delega en el repositorio sin filtro', async () => {
+      repo.findMany.mockResolvedValue([]);
+
+      await service.findAll();
+
+      expect(repo.findMany).toHaveBeenCalledWith({ status: undefined });
+    });
+
+    it('delega en el repositorio con el status', async () => {
+      repo.findMany.mockResolvedValue([]);
+
+      await service.findAll(WorkOrderStatus.routed);
+
+      expect(repo.findMany).toHaveBeenCalledWith({
+        status: WorkOrderStatus.routed,
+      });
+    });
+  });
 });
