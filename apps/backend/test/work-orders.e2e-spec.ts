@@ -50,7 +50,7 @@ describe('Hoja de ruta y operaciones (e2e)', () => {
     const customer = await prisma.customer.create({
       data: {
         name: 'Mecánica Sur SA',
-        taxId: `30-${Date.now()}-9`,
+        taxId: `30-${crypto.randomUUID()}`,
         email: 'compras@sur.example',
       },
     });
