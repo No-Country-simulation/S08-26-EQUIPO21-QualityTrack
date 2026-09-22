@@ -43,6 +43,7 @@ erDiagram
         string request_id FK
         string status
         float amount
+        string commitment_date "fecha de entrega comprometida al cliente"
     }
     WORK_ORDER {
         string id PK

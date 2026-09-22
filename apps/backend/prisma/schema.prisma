@@ -105,6 +105,11 @@ model Quote {
   // `amount` es Decimal, no Float como dice literalmente el ERD de
   // docs/architecture.md: Float pierde precisión en cálculos monetarios.
   // Es la única desviación deliberada del tipo que figura en el ERD.
+  commitmentDate DateTime @map("commitment_date")
+  // Fecha de entrega comprometida al cliente. Se define al cotizar, junto
+  // con `amount` -- el tablero de Producción (issue #69) la necesita para
+  // mostrar el compromiso de cada OT, y hoy no vive en ningún otro lado
+  // del modelo (ni REQUEST ni WORK_ORDER la tenían).
   createdAt DateTime    @default(now()) @map("created_at")
   updatedAt DateTime    @updatedAt @map("updated_at")
   // `status` de la cotización muta (pending_approval -> approved / rejected):

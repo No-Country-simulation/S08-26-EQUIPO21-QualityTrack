@@ -37,6 +37,14 @@ export class QuoteEntity implements Quote {
   })
   amount!: Prisma.Decimal;
 
+  @ApiProperty({
+    type: String,
+    format: 'date-time',
+    description:
+      'Fecha de entrega comprometida al cliente (issue #69, tablero de Producción).',
+  })
+  commitmentDate!: Date;
+
   @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 

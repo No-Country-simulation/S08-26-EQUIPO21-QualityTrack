@@ -71,6 +71,7 @@ export class QuotesService {
     return this.quotes.create({
       requestId: dto.requestId,
       amount: dto.amount,
+      commitmentDate: dto.commitmentDate,
     });
   }
 

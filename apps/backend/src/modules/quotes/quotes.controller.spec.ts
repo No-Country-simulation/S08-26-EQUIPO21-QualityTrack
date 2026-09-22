@@ -30,7 +30,11 @@ describe('QuotesController', () => {
   });
 
   it('delega create en el service', () => {
-    const dto = { requestId: QUOTE_ID, amount: 15000.5 };
+    const dto = {
+      requestId: QUOTE_ID,
+      amount: 15000.5,
+      commitmentDate: '2026-10-15',
+    };
     controller.create(dto);
     expect(service.create).toHaveBeenCalledWith(dto);
   });

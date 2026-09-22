@@ -46,3 +46,16 @@ Un test de integración debe cubrir:
   nulo → la base la rechaza.
 - Crear una OT con el mismo `quote_id` pero `replaces_work_order_id`
   apuntando a la OT cancelada → la base la acepta.
+
+## Backfill de `quote.commitment_date` (issue #69)
+
+`QUOTE.commitmentDate` nace `NOT NULL` en `schema.prisma`, pero al
+agregarla ya había filas de desarrollo en la tabla `quote` (pruebas
+manuales previas). `prisma migrate dev` no puede generar un `ALTER TABLE
+... NOT NULL` directo sobre una tabla con filas — se creó con
+`--create-only` y se editó a mano: agrega la columna nullable, backfillea
+`created_at + 14 días` para las filas existentes (dato de desarrollo, sin
+equivalente real que inventar) y recién ahí la vuelve `NOT NULL`. Ver
+`20260922122838_quote_commitment_date/migration.sql`. No afecta a
+ninguna fila nueva: `CreateQuoteDto.commitmentDate` es obligatorio desde
+esa migración en adelante.
