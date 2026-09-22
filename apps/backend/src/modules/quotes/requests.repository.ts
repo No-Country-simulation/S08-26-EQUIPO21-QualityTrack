@@ -26,10 +26,15 @@ export type RequestWithCustomer = Prisma.RequestGetPayload<{
 export class RequestsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { customerId: string; description: string }): Promise<Request> {
+  create(data: {
+    customerId: string;
+    piece: string;
+    quantity: number;
+  }): Promise<Request> {
     return this.prisma.request.create({
       data: {
-        description: data.description,
+        piece: data.piece,
+        quantity: data.quantity,
         customer: { connect: { id: data.customerId } },
       },
     });

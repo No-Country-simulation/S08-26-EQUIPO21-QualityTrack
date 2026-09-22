@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QuotesController } from './quotes.controller';
 import { QuotesService } from './quotes.service';
+import { QuoteStatus } from '../../generated/prisma/client';
 
 const QUOTE_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -8,6 +9,7 @@ describe('QuotesController', () => {
   let controller: QuotesController;
   const service = {
     create: vi.fn(),
+    findAll: vi.fn(),
     findOne: vi.fn(),
     approve: vi.fn(),
     reject: vi.fn(),
@@ -36,6 +38,16 @@ describe('QuotesController', () => {
   it('delega commercialPanel en el service', () => {
     controller.commercialPanel();
     expect(service.commercialPanel).toHaveBeenCalledWith();
+  });
+
+  it('delega findAll en el service sin filtro', () => {
+    controller.findAll();
+    expect(service.findAll).toHaveBeenCalledWith(undefined);
+  });
+
+  it('delega findAll en el service con el status', () => {
+    controller.findAll(QuoteStatus.approved);
+    expect(service.findAll).toHaveBeenCalledWith(QuoteStatus.approved);
   });
 
   it('delega findOne en el service con el id', () => {

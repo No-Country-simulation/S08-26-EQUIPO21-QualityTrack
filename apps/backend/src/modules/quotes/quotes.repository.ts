@@ -75,6 +75,23 @@ export class QuotesRepository {
     });
   }
 
+  /**
+   * Listado general de cotizaciones, con solicitud y cliente, más
+   * nuevas primero. Con `status` filtra por estado; sin él devuelve
+   * cotizaciones en cualquier estado — la consulta histórica que el
+   * panel de pendientes (`findManyByStatus`) no cubre, porque una vez
+   * aprobada o rechazada una cotización deja esa cola.
+   */
+  findMany(
+    options: { status?: QuoteStatus } = {},
+  ): Promise<QuoteWithRelations[]> {
+    return this.prisma.quote.findMany({
+      where: options.status ? { status: options.status } : undefined,
+      include: { request: { include: { customer: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   updateStatus(
     id: string,
     status: QuoteStatus,

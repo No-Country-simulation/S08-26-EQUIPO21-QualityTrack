@@ -45,7 +45,7 @@ describe('Cotizaciones (e2e)', () => {
     });
     customerId = customer.id;
     const req = await prisma.request.create({
-      data: { customerId, description: 'Torneado de 20 ejes de acero' },
+      data: { customerId, piece: 'Eje de acero', quantity: 20 },
     });
     requestId = req.id;
   });
@@ -154,7 +154,7 @@ describe('Cotizaciones (e2e)', () => {
 
   it('GET /quotes/commercial-panel devuelve solicitudes sin cotizar y cotizaciones pendientes', async () => {
     const quoted = await prisma.request.create({
-      data: { customerId, description: 'Fresado de bridas' },
+      data: { customerId, piece: 'Brida', quantity: 4 },
     });
     const pendingQuote = await prisma.quote.create({
       data: { requestId: quoted.id, status: 'pending_approval', amount: 500 },

@@ -80,10 +80,11 @@ model Customer {
 // -----------------------------------------------------------------------------
 
 model Request {
-  id          String   @id @default(uuid())
-  customerId  String   @map("customer_id")
-  description String
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  piece      String
+  quantity   Int
+  createdAt  DateTime @default(now()) @map("created_at")
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   quote    Quote?

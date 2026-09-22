@@ -34,7 +34,8 @@ erDiagram
     REQUEST {
         string id PK
         string customer_id FK
-        string description
+        string piece
+        int quantity
         string created_at
     }
     QUOTE {
