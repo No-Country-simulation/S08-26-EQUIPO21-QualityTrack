@@ -5,7 +5,7 @@ import type { Customer } from '@/types/customer';
 import { renderWithQueryClient } from '@/test/render';
 
 import { approveQuote, rejectQuote } from '../api';
-import type { QuoteSummary, RequestSummary } from '../types';
+import type { ApprovedQuote, QuoteSummary, RequestSummary } from '../types';
 import { QuotesTable } from './QuotesTable';
 
 vi.mock('../api');
@@ -142,9 +142,9 @@ describe('QuotesTable', () => {
 
   it('mientras aprueba, deshabilita ambos botones y muestra el texto en curso', async () => {
     const user = userEvent.setup();
-    let resolveApprove!: (value: unknown) => void;
+    let resolveApprove!: (value: ApprovedQuote) => void;
     approveQuoteMock.mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<ApprovedQuote>((resolve) => {
         resolveApprove = resolve;
       }),
     );
