@@ -171,6 +171,7 @@ describe('WorkOrdersService', () => {
 
   describe('getRouteSheet', () => {
     it('devuelve la hoja de ruta cuando existe', async () => {
+      repo.findById.mockResolvedValue(buildWorkOrder());
       const routeSheet = {
         id: '55555555-5555-5555-5555-555555555555',
         workOrderId: WO_ID,
@@ -183,11 +184,22 @@ describe('WorkOrdersService', () => {
     });
 
     it('rechaza con 404 si la OT todavía no tiene hoja de ruta', async () => {
+      repo.findById.mockResolvedValue(buildWorkOrder());
       routeSheets.findByWorkOrderId.mockResolvedValue(null);
 
       await expect(service.getRouteSheet(WO_ID)).rejects.toBeInstanceOf(
         NotFoundException,
       );
+      expect(routeSheets.findByWorkOrderId).toHaveBeenCalled();
+    });
+
+    it('rechaza con 404 (de OT inexistente) si la OT no existe, sin llegar a buscar la hoja de ruta', async () => {
+      repo.findById.mockResolvedValue(null);
+
+      await expect(service.getRouteSheet(WO_ID)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(routeSheets.findByWorkOrderId).not.toHaveBeenCalled();
     });
   });
 

@@ -102,8 +102,14 @@ export class WorkOrdersService {
     });
   }
 
-  /** Hoja de ruta de una OT con sus operaciones, ordenadas 1..N. */
+  /**
+   * Hoja de ruta de una OT con sus operaciones, ordenadas 1..N. Valida
+   * primero que la OT exista (`findOne`, 404 propio) para distinguir "OT
+   * inexistente" de "OT sin hoja de ruta todavía" — mismo mensaje 404 en
+   * ambos casos sin esto, engañoso para quien consuma la API.
+   */
   async getRouteSheet(workOrderId: string): Promise<RouteSheetWithOperations> {
+    await this.findOne(workOrderId);
     const routeSheet = await this.routeSheets.findByWorkOrderId(workOrderId);
     if (routeSheet === null) {
       throw new NotFoundException(
