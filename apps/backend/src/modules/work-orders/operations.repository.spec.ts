@@ -12,6 +12,7 @@ describe('OperationsRepository', () => {
   let prisma: {
     operation: {
       findUnique: ReturnType<typeof vi.fn>;
+      findUniqueOrThrow: ReturnType<typeof vi.fn>;
       updateMany: ReturnType<typeof vi.fn>;
       count: ReturnType<typeof vi.fn>;
     };
@@ -21,6 +22,7 @@ describe('OperationsRepository', () => {
     prisma = {
       operation: {
         findUnique: vi.fn(),
+        findUniqueOrThrow: vi.fn(),
         updateMany: vi.fn(),
         count: vi.fn(),
       },
@@ -50,10 +52,14 @@ describe('OperationsRepository', () => {
   });
 
   describe('start', () => {
-    it('actualiza pending -> in_progress y devuelve true si afectó una fila', async () => {
+    it('actualiza pending -> in_progress y relee la fila persistida (updatedAt real)', async () => {
       prisma.operation.updateMany.mockResolvedValue({ count: 1 });
+      const updated = { id: OPERATION_ID, status: 'in_progress' };
+      prisma.operation.findUniqueOrThrow.mockResolvedValue(updated);
 
-      await expect(repo.start(OPERATION_ID, USER_ID, NOW)).resolves.toBe(true);
+      await expect(repo.start(OPERATION_ID, USER_ID, NOW)).resolves.toBe(
+        updated,
+      );
       expect(prisma.operation.updateMany).toHaveBeenCalledWith({
         where: { id: OPERATION_ID, status: 'pending' },
         data: {
@@ -62,34 +68,52 @@ describe('OperationsRepository', () => {
           startedAt: NOW,
         },
       });
+      expect(prisma.operation.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { id: OPERATION_ID },
+      });
     });
 
-    it('devuelve false si la operación ya no estaba pending', async () => {
+    it('devuelve null sin releer si la operación ya no estaba pending', async () => {
       prisma.operation.updateMany.mockResolvedValue({ count: 0 });
 
-      await expect(repo.start(OPERATION_ID, USER_ID, NOW)).resolves.toBe(false);
+      await expect(repo.start(OPERATION_ID, USER_ID, NOW)).resolves.toBe(null);
+      expect(prisma.operation.findUniqueOrThrow).not.toHaveBeenCalled();
     });
 
-    it('usa el transaction client cuando se le pasa uno', async () => {
+    it('usa el transaction client cuando se le pasa uno, para el update y la relectura', async () => {
       const tx = {
-        operation: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+        operation: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          findUniqueOrThrow: vi.fn().mockResolvedValue({ id: OPERATION_ID }),
+        },
       } as never;
 
       await repo.start(OPERATION_ID, USER_ID, NOW, tx);
 
-      expect(
-        (tx as { operation: { updateMany: ReturnType<typeof vi.fn> } })
-          .operation.updateMany,
-      ).toHaveBeenCalled();
+      const txOperation = (
+        tx as {
+          operation: {
+            updateMany: ReturnType<typeof vi.fn>;
+            findUniqueOrThrow: ReturnType<typeof vi.fn>;
+          };
+        }
+      ).operation;
+      expect(txOperation.updateMany).toHaveBeenCalled();
+      expect(txOperation.findUniqueOrThrow).toHaveBeenCalled();
       expect(prisma.operation.updateMany).not.toHaveBeenCalled();
+      expect(prisma.operation.findUniqueOrThrow).not.toHaveBeenCalled();
     });
   });
 
   describe('finish', () => {
-    it('actualiza in_progress -> completed y devuelve true si afectó una fila', async () => {
+    it('actualiza in_progress -> completed y relee la fila persistida (updatedAt real)', async () => {
       prisma.operation.updateMany.mockResolvedValue({ count: 1 });
+      const updated = { id: OPERATION_ID, status: 'completed' };
+      prisma.operation.findUniqueOrThrow.mockResolvedValue(updated);
 
-      await expect(repo.finish(OPERATION_ID, USER_ID, NOW)).resolves.toBe(true);
+      await expect(repo.finish(OPERATION_ID, USER_ID, NOW)).resolves.toBe(
+        updated,
+      );
       expect(prisma.operation.updateMany).toHaveBeenCalledWith({
         where: { id: OPERATION_ID, status: 'in_progress' },
         data: {
@@ -98,14 +122,16 @@ describe('OperationsRepository', () => {
           finishedAt: NOW,
         },
       });
+      expect(prisma.operation.findUniqueOrThrow).toHaveBeenCalledWith({
+        where: { id: OPERATION_ID },
+      });
     });
 
-    it('devuelve false si la operación ya no estaba in_progress', async () => {
+    it('devuelve null sin releer si la operación ya no estaba in_progress', async () => {
       prisma.operation.updateMany.mockResolvedValue({ count: 0 });
 
-      await expect(repo.finish(OPERATION_ID, USER_ID, NOW)).resolves.toBe(
-        false,
-      );
+      await expect(repo.finish(OPERATION_ID, USER_ID, NOW)).resolves.toBe(null);
+      expect(prisma.operation.findUniqueOrThrow).not.toHaveBeenCalled();
     });
   });
 

@@ -8,7 +8,7 @@ import { StatusHistoryService } from '../status-history/status-history.service';
 import { WorkOrderEvent } from '../status-history/work-order-event';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WorkOrderStatus } from '../../generated/prisma/client';
-import type { WorkOrder } from '../../generated/prisma/client';
+import type { Operation, WorkOrder } from '../../generated/prisma/client';
 
 const OPERATION_ID = '66666666-6666-6666-6666-666666666666';
 const ROUTE_SHEET_ID = '55555555-5555-5555-5555-555555555555';
@@ -37,6 +37,26 @@ const buildOperation = (
     },
     ...over,
   }) as unknown as OperationWithRouteSheet;
+
+/**
+ * La fila que `OperationsRepository.start`/`finish` devuelven — releída
+ * dentro de la transacción, así que su `updatedAt` es el real posterior
+ * al `updateMany` (no el de `buildOperation`, anterior al update).
+ */
+const buildUpdatedOperation = (over: Partial<Operation> = {}): Operation =>
+  ({
+    id: OPERATION_ID,
+    routeSheetId: ROUTE_SHEET_ID,
+    sequence: 1,
+    type: 'Torneado',
+    status: 'pending',
+    startedByUserId: null,
+    startedAt: null,
+    finishedByUserId: null,
+    finishedAt: null,
+    updatedAt: new Date('2026-09-22T10:00:00Z'),
+    ...over,
+  }) as unknown as Operation;
 
 describe('OperationsService', () => {
   let service: OperationsService;
@@ -75,7 +95,12 @@ describe('OperationsService', () => {
   describe('start', () => {
     it('inicia la operación y, al ser la primera, transiciona routed -> in_production', async () => {
       repo.findById.mockResolvedValue(buildOperation());
-      repo.start.mockResolvedValue(true);
+      const updated = buildUpdatedOperation({
+        status: 'in_progress',
+        startedByUserId: USER_ID,
+        startedAt: new Date('2026-09-22T10:00:00Z'),
+      });
+      repo.start.mockResolvedValue(updated);
       repo.countNotPending.mockResolvedValue(1);
       statusHistory.transition.mockResolvedValue({
         status: WorkOrderStatus.in_production,
@@ -83,8 +108,7 @@ describe('OperationsService', () => {
 
       const result = await service.start(OPERATION_ID, USER_ID);
 
-      expect(result.status).toBe('in_progress');
-      expect(result.startedByUserId).toBe(USER_ID);
+      expect(result).toBe(updated);
       expect(repo.start).toHaveBeenCalledWith(
         OPERATION_ID,
         USER_ID,
@@ -102,7 +126,9 @@ describe('OperationsService', () => {
 
     it('no transiciona la OT si no es la primera operación en iniciar', async () => {
       repo.findById.mockResolvedValue(buildOperation());
-      repo.start.mockResolvedValue(true);
+      repo.start.mockResolvedValue(
+        buildUpdatedOperation({ status: 'in_progress' }),
+      );
       repo.countNotPending.mockResolvedValue(2);
 
       await service.start(OPERATION_ID, USER_ID);
@@ -112,7 +138,7 @@ describe('OperationsService', () => {
 
     it('rechaza con 409 si la operación ya no está pendiente', async () => {
       repo.findById.mockResolvedValue(buildOperation());
-      repo.start.mockResolvedValue(false);
+      repo.start.mockResolvedValue(null);
 
       await expect(service.start(OPERATION_ID, USER_ID)).rejects.toBeInstanceOf(
         ConflictException,
@@ -134,7 +160,12 @@ describe('OperationsService', () => {
       repo.findById.mockResolvedValue(
         buildOperation({ status: 'in_progress' }),
       );
-      repo.finish.mockResolvedValue(true);
+      const updated = buildUpdatedOperation({
+        status: 'completed',
+        finishedByUserId: USER_ID,
+        finishedAt: new Date('2026-09-22T10:00:00Z'),
+      });
+      repo.finish.mockResolvedValue(updated);
       repo.countNotCompleted.mockResolvedValue(0);
       statusHistory.transition.mockResolvedValue({
         status: WorkOrderStatus.in_quality_control,
@@ -142,8 +173,7 @@ describe('OperationsService', () => {
 
       const result = await service.finish(OPERATION_ID, USER_ID);
 
-      expect(result.status).toBe('completed');
-      expect(result.finishedByUserId).toBe(USER_ID);
+      expect(result).toBe(updated);
       expect(repo.countNotCompleted).toHaveBeenCalledWith(ROUTE_SHEET_ID, TX);
       expect(statusHistory.transition).toHaveBeenCalledWith(
         WO_ID,
@@ -157,7 +187,9 @@ describe('OperationsService', () => {
       repo.findById.mockResolvedValue(
         buildOperation({ status: 'in_progress' }),
       );
-      repo.finish.mockResolvedValue(true);
+      repo.finish.mockResolvedValue(
+        buildUpdatedOperation({ status: 'completed' }),
+      );
       repo.countNotCompleted.mockResolvedValue(1);
 
       await service.finish(OPERATION_ID, USER_ID);
@@ -169,7 +201,7 @@ describe('OperationsService', () => {
       repo.findById.mockResolvedValue(
         buildOperation({ status: 'in_progress' }),
       );
-      repo.finish.mockResolvedValue(false);
+      repo.finish.mockResolvedValue(null);
 
       await expect(
         service.finish(OPERATION_ID, USER_ID),

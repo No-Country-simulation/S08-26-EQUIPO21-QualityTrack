@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { Prisma } from '../../generated/prisma/client';
+import type { Operation, Prisma } from '../../generated/prisma/client';
 
 /** Una `OPERATION` con su `ROUTE_SHEET` — para llegar al `workOrderId`. */
 export type OperationWithRouteSheet = Prisma.OperationGetPayload<{
@@ -30,32 +30,44 @@ export class OperationsRepository {
     });
   }
 
-  /** `pending -> in_progress`. `false` si ya no estaba `pending`. */
+  /**
+   * `pending -> in_progress`. `null` si ya no estaba `pending` — el
+   * caller lo trata como conflicto. Relee la fila dentro del mismo `tx`
+   * después del `updateMany` para devolver el `updatedAt` real que
+   * `@updatedAt` acaba de persistir, no el que tenía antes de escribir.
+   */
   async start(
     operationId: string,
     userId: string,
     startedAt: Date,
     tx?: Prisma.TransactionClient,
-  ): Promise<boolean> {
-    const { count } = await (tx ?? this.prisma).operation.updateMany({
+  ): Promise<Operation | null> {
+    const client = tx ?? this.prisma;
+    const { count } = await client.operation.updateMany({
       where: { id: operationId, status: PENDING },
       data: { status: IN_PROGRESS, startedByUserId: userId, startedAt },
     });
-    return count === 1;
+    if (count !== 1) return null;
+    return client.operation.findUniqueOrThrow({ where: { id: operationId } });
   }
 
-  /** `in_progress -> completed`. `false` si ya no estaba `in_progress`. */
+  /**
+   * `in_progress -> completed`. `null` si ya no estaba `in_progress` —
+   * mismo criterio de relectura post-`updateMany` que `start()`.
+   */
   async finish(
     operationId: string,
     userId: string,
     finishedAt: Date,
     tx?: Prisma.TransactionClient,
-  ): Promise<boolean> {
-    const { count } = await (tx ?? this.prisma).operation.updateMany({
+  ): Promise<Operation | null> {
+    const client = tx ?? this.prisma;
+    const { count } = await client.operation.updateMany({
       where: { id: operationId, status: IN_PROGRESS },
       data: { status: COMPLETED, finishedByUserId: userId, finishedAt },
     });
-    return count === 1;
+    if (count !== 1) return null;
+    return client.operation.findUniqueOrThrow({ where: { id: operationId } });
   }
 
   /**

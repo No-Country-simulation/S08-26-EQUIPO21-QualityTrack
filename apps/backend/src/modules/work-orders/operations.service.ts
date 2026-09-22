@@ -31,17 +31,17 @@ export class OperationsService {
   ) {}
 
   async start(operationId: string, userId: string): Promise<Operation> {
-    const { routeSheet, ...operation } = await this.load(operationId);
+    const { routeSheet } = await this.load(operationId);
     const startedAt = new Date();
 
     return this.prisma.$transaction(async (tx) => {
-      const applied = await this.operations.start(
+      const updated = await this.operations.start(
         operationId,
         userId,
         startedAt,
         tx,
       );
-      if (!applied) {
+      if (updated === null) {
         throw new ConflictException(
           `La operación "${operationId}" no está pendiente de iniciar.`,
         );
@@ -60,27 +60,22 @@ export class OperationsService {
         );
       }
 
-      return {
-        ...operation,
-        status: 'in_progress',
-        startedByUserId: userId,
-        startedAt,
-      };
+      return updated;
     });
   }
 
   async finish(operationId: string, userId: string): Promise<Operation> {
-    const { routeSheet, ...operation } = await this.load(operationId);
+    const { routeSheet } = await this.load(operationId);
     const finishedAt = new Date();
 
     return this.prisma.$transaction(async (tx) => {
-      const applied = await this.operations.finish(
+      const updated = await this.operations.finish(
         operationId,
         userId,
         finishedAt,
         tx,
       );
-      if (!applied) {
+      if (updated === null) {
         throw new ConflictException(
           `La operación "${operationId}" no está en curso.`,
         );
@@ -99,12 +94,7 @@ export class OperationsService {
         );
       }
 
-      return {
-        ...operation,
-        status: 'completed',
-        finishedByUserId: userId,
-        finishedAt,
-      };
+      return updated;
     });
   }
 

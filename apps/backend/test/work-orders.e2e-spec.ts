@@ -223,6 +223,13 @@ describe('Hoja de ruta y operaciones (e2e)', () => {
         startedByUserId: userId,
       });
 
+      // La respuesta refleja el updatedAt real que @updatedAt acaba de
+      // persistir, no el de antes de la transacción.
+      const persisted = await prisma.operation.findUniqueOrThrow({
+        where: { id: operationIds[0] },
+      });
+      expect(res.body.updatedAt).toBe(persisted.updatedAt.toISOString());
+
       const workOrder = await prisma.workOrder.findUniqueOrThrow({
         where: { id: workOrderId },
       });
