@@ -59,3 +59,19 @@ equivalente real que inventar) y recién ahí la vuelve `NOT NULL`. Ver
 `20260922122838_quote_commitment_date/migration.sql`. No afecta a
 ninguna fila nueva: `CreateQuoteDto.commitmentDate` es obligatorio desde
 esa migración en adelante.
+
+## Backfill de `operation.sequence` (issue #31)
+
+Mismo caso que `quote.commitment_date`: `Operation.sequence` nace
+`NOT NULL` en `schema.prisma`, pero el generador original de la migración
+avisó que un `ADD COLUMN ... NOT NULL` directo falla si `operation` ya
+tiene filas. Se editó a mano (`20260922120600_operation_route_progress_tracking/migration.sql`):
+agrega `sequence` nullable, backfillea numerando las operaciones
+existentes por `route_sheet_id` (orden por `id`, el único desempate
+estable disponible — no hay un campo de orden previo) y recién ahí la
+vuelve `NOT NULL`. En la práctica no debería haber filas reales al
+aplicar esta migración — `ROUTE_SHEET`/`OPERATION` recién se empiezan a
+poblar con el código de este mismo PR — pero se sigue el mismo criterio
+de seguridad que el resto de las migraciones con backfill de este
+proyecto, por si el orden de aplicación real difiere (datos de prueba
+insertados a mano, por ejemplo).
