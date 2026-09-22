@@ -19,7 +19,7 @@ function CancelWorkOrderDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Cancelar orden de trabajo</DialogTitle>
-          <DialogDescription>Ingresá un motivo.</DialogDescription>
+          <DialogDescription>Ingresar un motivo.</DialogDescription>
         </DialogHeader>
       </DialogContent>
     </Dialog>

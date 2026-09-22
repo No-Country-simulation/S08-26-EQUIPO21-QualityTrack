@@ -13,6 +13,9 @@ dist-ssr
 coverage
 *.local
 
+# Vitest cache / JSON report
+.vitest/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
