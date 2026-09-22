@@ -39,7 +39,7 @@ describe('Cotizaciones (e2e)', () => {
     const customer = await prisma.customer.create({
       data: {
         name: 'Mecánica Sur SA',
-        taxId: `30-${Date.now()}-9`,
+        taxId: `30-${crypto.randomUUID()}`,
         email: 'compras@sur.example',
       },
     });
@@ -68,7 +68,7 @@ describe('Cotizaciones (e2e)', () => {
   it('POST /quotes crea la cotización en pending_approval y la vincula a la solicitud', async () => {
     const res = await request(app.getHttpServer())
       .post('/quotes')
-      .send({ requestId, amount: 15000.5 })
+      .send({ requestId, amount: 15000.5, commitmentDate: '2026-10-15' })
       .expect(201);
 
     expect(res.body).toMatchObject({
@@ -79,26 +79,44 @@ describe('Cotizaciones (e2e)', () => {
   });
 
   it('POST /quotes -> 404 si la solicitud no existe', async () => {
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post('/quotes')
-      .send({ requestId: '00000000-0000-0000-0000-000000000000', amount: 100 })
+      .send({
+        requestId: '00000000-0000-0000-0000-000000000000',
+        amount: 100,
+        commitmentDate: '2026-10-15',
+      })
       .expect(404);
+
+    expect(res.body.message).toContain('No existe una solicitud');
   });
 
   it('POST /quotes -> 409 si la solicitud ya tiene una cotización', async () => {
     await prisma.quote.create({
-      data: { requestId, status: 'pending_approval', amount: 100 },
+      data: {
+        requestId,
+        status: 'pending_approval',
+        amount: 100,
+        commitmentDate: new Date('2026-10-15'),
+      },
     });
 
-    await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post('/quotes')
-      .send({ requestId, amount: 200 })
+      .send({ requestId, amount: 200, commitmentDate: '2026-10-15' })
       .expect(409);
+
+    expect(res.body.message).toContain('ya tiene una cotización');
   });
 
   it('PATCH /quotes/:id/approve mueve a approved y genera la OT original', async () => {
     const quote = await prisma.quote.create({
-      data: { requestId, status: 'pending_approval', amount: 999 },
+      data: {
+        requestId,
+        status: 'pending_approval',
+        amount: 999,
+        commitmentDate: new Date('2026-10-15'),
+      },
     });
 
     const res = await request(app.getHttpServer())
@@ -120,7 +138,12 @@ describe('Cotizaciones (e2e)', () => {
 
   it('PATCH /quotes/:id/approve -> 409 si ya no está en pending_approval (no crea otra OT)', async () => {
     const quote = await prisma.quote.create({
-      data: { requestId, status: 'pending_approval', amount: 999 },
+      data: {
+        requestId,
+        status: 'pending_approval',
+        amount: 999,
+        commitmentDate: new Date('2026-10-15'),
+      },
     });
     await request(app.getHttpServer())
       .patch(`/quotes/${quote.id}/approve`)
@@ -138,7 +161,12 @@ describe('Cotizaciones (e2e)', () => {
 
   it('PATCH /quotes/:id/reject mueve a rejected y no genera OT', async () => {
     const quote = await prisma.quote.create({
-      data: { requestId, status: 'pending_approval', amount: 999 },
+      data: {
+        requestId,
+        status: 'pending_approval',
+        amount: 999,
+        commitmentDate: new Date('2026-10-15'),
+      },
     });
 
     const res = await request(app.getHttpServer())
@@ -157,7 +185,12 @@ describe('Cotizaciones (e2e)', () => {
       data: { customerId, piece: 'Brida', quantity: 4 },
     });
     const pendingQuote = await prisma.quote.create({
-      data: { requestId: quoted.id, status: 'pending_approval', amount: 500 },
+      data: {
+        requestId: quoted.id,
+        status: 'pending_approval',
+        amount: 500,
+        commitmentDate: new Date('2026-10-15'),
+      },
     });
 
     const res = await request(app.getHttpServer())

@@ -21,6 +21,8 @@ erDiagram
     WORK_ORDER ||--o{ STATUS_HISTORY : logs
     WORK_ORDER ||--o| WORK_ORDER : replaces
     APP_USER ||--o{ STATUS_HISTORY : performs
+    APP_USER ||--o{ OPERATION : starts
+    APP_USER ||--o{ OPERATION : finishes
 
     CUSTOMER {
         string id PK
@@ -43,6 +45,7 @@ erDiagram
         string request_id FK
         string status
         float amount
+        string commitment_date "fecha de entrega comprometida al cliente"
     }
     WORK_ORDER {
         string id PK
@@ -54,13 +57,18 @@ erDiagram
     ROUTE_SHEET {
         string id PK
         string work_order_id FK
-        int sequence
+        int sequence "reservado para futuras revisiones; hoy siempre 1"
     }
     OPERATION {
         string id PK
         string route_sheet_id FK
+        int sequence "orden 1..N dentro de la hoja de ruta"
         string type
-        string status
+        string status "pending / in_progress / completed"
+        string started_by_user_id FK "nullable"
+        string started_at "nullable"
+        string finished_by_user_id FK "nullable"
+        string finished_at "nullable"
     }
     QUALITY_CONTROL {
         string id PK

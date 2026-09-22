@@ -53,6 +53,7 @@ const buildQuote = (over: Partial<Quote> = {}): Quote => ({
   requestId: REQUEST_ID,
   status: QuoteStatus.pending_approval,
   amount: new Prisma.Decimal('15000.50'),
+  commitmentDate: new Date('2026-09-23T00:00:00Z'),
   createdAt: new Date('2026-09-09T09:00:00Z'),
   updatedAt: new Date('2026-09-09T09:00:00Z'),
   ...over,
@@ -121,12 +122,14 @@ describe('QuotesService', () => {
       const result = await service.create({
         requestId: REQUEST_ID,
         amount: 15000.5,
+        commitmentDate: '2026-10-15',
       });
 
       expect(result).toBe(created);
       expect(quotes.create).toHaveBeenCalledWith({
         requestId: REQUEST_ID,
         amount: 15000.5,
+        commitmentDate: '2026-10-15',
       });
     });
 
@@ -134,7 +137,11 @@ describe('QuotesService', () => {
       requests.findById.mockResolvedValue(null);
 
       await expect(
-        service.create({ requestId: REQUEST_ID, amount: 100 }),
+        service.create({
+          requestId: REQUEST_ID,
+          amount: 100,
+          commitmentDate: '2026-10-15',
+        }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(quotes.create).not.toHaveBeenCalled();
     });
@@ -144,7 +151,11 @@ describe('QuotesService', () => {
       quotes.findByRequestId.mockResolvedValue(buildQuote());
 
       await expect(
-        service.create({ requestId: REQUEST_ID, amount: 100 }),
+        service.create({
+          requestId: REQUEST_ID,
+          amount: 100,
+          commitmentDate: '2026-10-15',
+        }),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(quotes.create).not.toHaveBeenCalled();
     });

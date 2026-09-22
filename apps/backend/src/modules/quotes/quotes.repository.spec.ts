@@ -19,6 +19,7 @@ const buildQuote = (over: Partial<Quote> = {}): Quote => ({
   requestId: REQUEST_ID,
   status: QuoteStatus.pending_approval,
   amount: new Prisma.Decimal('15000.50'),
+  commitmentDate: new Date('2026-09-23T00:00:00Z'),
   createdAt: new Date('2026-09-09T09:00:00Z'),
   updatedAt: new Date('2026-09-09T09:00:00Z'),
   ...over,
@@ -61,12 +62,17 @@ describe('QuotesRepository', () => {
       prisma.quote.create.mockResolvedValue(created);
 
       await expect(
-        repo.create({ requestId: REQUEST_ID, amount: 15000.5 }),
+        repo.create({
+          requestId: REQUEST_ID,
+          amount: 15000.5,
+          commitmentDate: '2026-10-15',
+        }),
       ).resolves.toBe(created);
       expect(prisma.quote.create).toHaveBeenCalledWith({
         data: {
           status: QuoteStatus.pending_approval,
           amount: new Prisma.Decimal(15000.5),
+          commitmentDate: new Date('2026-10-15'),
           request: { connect: { id: REQUEST_ID } },
         },
       });
@@ -76,7 +82,11 @@ describe('QuotesRepository', () => {
       prisma.quote.create.mockRejectedValue(p2002());
 
       await expect(
-        repo.create({ requestId: REQUEST_ID, amount: 100 }),
+        repo.create({
+          requestId: REQUEST_ID,
+          amount: 100,
+          commitmentDate: '2026-10-15',
+        }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -88,7 +98,11 @@ describe('QuotesRepository', () => {
       prisma.quote.create.mockRejectedValue(other);
 
       await expect(
-        repo.create({ requestId: REQUEST_ID, amount: 100 }),
+        repo.create({
+          requestId: REQUEST_ID,
+          amount: 100,
+          commitmentDate: '2026-10-15',
+        }),
       ).rejects.toBe(other);
     });
   });

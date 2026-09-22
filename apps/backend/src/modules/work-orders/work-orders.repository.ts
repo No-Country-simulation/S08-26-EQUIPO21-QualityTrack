@@ -4,6 +4,15 @@ import { Prisma, WorkOrderStatus } from '../../generated/prisma/client';
 import type { WorkOrder } from '../../generated/prisma/client';
 
 /**
+ * Una `WORK_ORDER` con su cotización, solicitud y cliente — lo que
+ * necesita cada fila del listado de Producción (`GET /work-orders`,
+ * issue #69): cliente, pieza y fecha de compromiso salen de esa cadena.
+ */
+export type WorkOrderWithRelations = Prisma.WorkOrderGetPayload<{
+  include: { quote: { include: { request: { include: { customer: true } } } } };
+}>;
+
+/**
  * Acceso a datos de `WORK_ORDER`. Envuelve las llamadas de Prisma para
  * que el service trabaje contra una interfaz acotada (ver
  * docs/backend-structure.md).
@@ -80,6 +89,26 @@ export class WorkOrdersRepository {
   ): Promise<WorkOrder | null> {
     return (tx ?? this.prisma).workOrder.findFirst({
       where: { quoteId, replacesWorkOrderId: null },
+    });
+  }
+
+  /**
+   * Listado de OT con cotización, solicitud y cliente, más viejas
+   * primero — el tablero de Producción (issue #69) las agrupa por
+   * `status` en el cliente, mismo patrón que `QuotesRepository.findMany`
+   * / `CommercialPage` (que ya arma sus tabs agrupando en el cliente en
+   * vez de pedirle al backend una respuesta pre-agrupada). Con `status`
+   * filtra por un único estado; sin él devuelve todas.
+   */
+  findMany(
+    options: { status?: WorkOrderStatus } = {},
+  ): Promise<WorkOrderWithRelations[]> {
+    return this.prisma.workOrder.findMany({
+      where: options.status ? { status: options.status } : undefined,
+      include: {
+        quote: { include: { request: { include: { customer: true } } } },
+      },
+      orderBy: { createdAt: 'asc' },
     });
   }
 }

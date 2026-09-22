@@ -25,12 +25,17 @@ export type QuoteWithRelations = Prisma.QuoteGetPayload<{
 export class QuotesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: { requestId: string; amount: number }): Promise<Quote> {
+  async create(data: {
+    requestId: string;
+    amount: number;
+    commitmentDate: string;
+  }): Promise<Quote> {
     try {
       return await this.prisma.quote.create({
         data: {
           status: QuoteStatus.pending_approval,
           amount: new Prisma.Decimal(data.amount),
+          commitmentDate: new Date(data.commitmentDate),
           request: { connect: { id: data.requestId } },
         },
       });

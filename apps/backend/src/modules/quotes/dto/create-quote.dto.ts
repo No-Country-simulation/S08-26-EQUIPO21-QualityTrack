@@ -1,11 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsPositive, IsUUID, Max } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsPositive,
+  IsUUID,
+  Max,
+} from 'class-validator';
 
 /**
- * Alta de una cotización (`QUOTE`): el precio que Comercial le pasa al
- * cliente por una solicitud (Épica 2). Se asocia siempre a una `REQUEST`
- * existente que todavía no tenga cotización — esa validación vive en el
- * service, no acá.
+ * Alta de una cotización (`QUOTE`): el precio y la fecha de compromiso
+ * que Comercial le pasa al cliente por una solicitud (Épica 2). Se
+ * asocia siempre a una `REQUEST` existente que todavía no tenga
+ * cotización — esa validación vive en el service, no acá.
  *
  * `status` no va en el DTO: toda cotización nace en `pending_approval`.
  * El cliente se alcanza vía la solicitud (ADR-0003), no se repite acá.
@@ -31,4 +37,13 @@ export class CreateQuoteDto {
   @IsPositive()
   @Max(9_999_999_999.99)
   amount!: number;
+
+  @ApiProperty({
+    description:
+      'Fecha de entrega comprometida al cliente (issue #69: la necesita ' +
+      'el tablero de Producción).',
+    example: '2026-10-15',
+  })
+  @IsDateString()
+  commitmentDate!: string;
 }

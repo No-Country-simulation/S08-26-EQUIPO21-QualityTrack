@@ -23,6 +23,7 @@ describe('WorkOrdersRepository', () => {
       create: ReturnType<typeof vi.fn>;
       findUnique: ReturnType<typeof vi.fn>;
       findFirst: ReturnType<typeof vi.fn>;
+      findMany: ReturnType<typeof vi.fn>;
     };
   };
 
@@ -32,6 +33,7 @@ describe('WorkOrdersRepository', () => {
         create: vi.fn(),
         findUnique: vi.fn(),
         findFirst: vi.fn(),
+        findMany: vi.fn(),
       },
     };
 
@@ -98,6 +100,36 @@ describe('WorkOrdersRepository', () => {
 
       expect(prisma.workOrder.findFirst).toHaveBeenCalledWith({
         where: { quoteId: QUOTE_ID, replacesWorkOrderId: null },
+      });
+    });
+  });
+
+  describe('findMany', () => {
+    it('busca todas las OT con cotización, solicitud y cliente cuando no hay status', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+
+      await repo.findMany();
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith({
+        where: undefined,
+        include: {
+          quote: { include: { request: { include: { customer: true } } } },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+    });
+
+    it('filtra por status cuando se lo pasan', async () => {
+      prisma.workOrder.findMany.mockResolvedValue([]);
+
+      await repo.findMany({ status: WorkOrderStatus.routed });
+
+      expect(prisma.workOrder.findMany).toHaveBeenCalledWith({
+        where: { status: WorkOrderStatus.routed },
+        include: {
+          quote: { include: { request: { include: { customer: true } } } },
+        },
+        orderBy: { createdAt: 'asc' },
       });
     });
   });
