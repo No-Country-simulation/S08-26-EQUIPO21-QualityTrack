@@ -42,7 +42,7 @@ export class RequestsController {
   @ApiCreatedResponse({ type: RequestEntity })
   @ApiBadRequestResponse({
     description:
-      'El body no cumple las validaciones (customerId no es UUID, description vacía, etc.).',
+      'El body no cumple las validaciones (customerId no es UUID, piece vacío, quantity no positivo, etc.).',
   })
   @ApiNotFoundResponse({
     description: 'No existe un cliente con ese `customerId`.',

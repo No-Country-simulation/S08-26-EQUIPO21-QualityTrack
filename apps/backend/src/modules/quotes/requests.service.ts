@@ -43,7 +43,8 @@ export class RequestsService {
 
     return this.requests.create({
       customerId: dto.customerId,
-      description: dto.description,
+      piece: dto.piece,
+      quantity: dto.quantity,
     });
   }
 

@@ -74,6 +74,16 @@ export class QuotesService {
     });
   }
 
+  /**
+   * Listado general de cotizaciones, con solicitud y cliente. Con
+   * `status` filtra por estado; sin él devuelve todas — la consulta
+   * histórica que necesita ver una cotización aprobada o rechazada,
+   * que ya salió de `commercialPanel`.
+   */
+  findAll(status?: QuoteStatus): Promise<QuoteWithRelations[]> {
+    return this.quotes.findMany({ status });
+  }
+
   /** Detalle de una cotización con su solicitud y cliente. 404 si no existe. */
   async findOne(id: string): Promise<QuoteWithRelations> {
     const quote = await this.quotes.findByIdWithRelations(id);

@@ -17,8 +17,13 @@ export class RequestEntity implements Request {
   })
   customerId!: string;
 
-  @ApiProperty({ description: 'Descripción del trabajo solicitado.' })
-  description!: string;
+  @ApiProperty({
+    description: 'Nombre o descripción corta de la pieza solicitada.',
+  })
+  piece!: string;
+
+  @ApiProperty({ description: 'Cantidad de piezas solicitadas.' })
+  quantity!: number;
 
   @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;

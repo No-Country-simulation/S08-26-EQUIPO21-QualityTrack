@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsPositive,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * Alta de una solicitud (`REQUEST`): el pedido original del cliente,
@@ -7,9 +14,12 @@ import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
  * existente y no archivado (ADR-0007) — esa validación vive en el
  * service, no acá.
  *
- * `description` es el texto libre del trabajo pedido. La solicitud no
- * tiene estado propio: se infiere si tiene o no una `QUOTE` asociada
- * (ADR-0003).
+ * `piece` + `quantity` son los datos estructurados del trabajo pedido
+ * (antes vivían aplastados en un único `description` de texto libre).
+ * Las especificaciones técnicas del trabajo (planos, certificados de
+ * materia prima) no van acá: se adjuntan como `DOCUMENT` sobre la OT
+ * (Épica 4, ADR-0010). La solicitud no tiene estado propio: se infiere
+ * si tiene o no una `QUOTE` asociada (ADR-0003).
  */
 export class CreateRequestDto {
   @ApiProperty({
@@ -21,11 +31,19 @@ export class CreateRequestDto {
   customerId!: string;
 
   @ApiProperty({
-    description:
-      'Descripción del trabajo solicitado por el cliente (texto libre).',
+    description: 'Nombre o descripción corta de la pieza solicitada.',
+    example: 'Brida DN200',
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(2000)
-  description!: string;
+  @MaxLength(150)
+  piece!: string;
+
+  @ApiProperty({
+    description: 'Cantidad de piezas solicitadas. Entero positivo.',
+    example: 12,
+  })
+  @IsInt()
+  @IsPositive()
+  quantity!: number;
 }
