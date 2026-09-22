@@ -6,14 +6,25 @@ import {
   approveQuote,
   createQuote,
   createRequest,
-  getCommercialPanel,
+  getQuotes,
+  getRequests,
   rejectQuote,
 } from './api';
+import type { QuoteStatus } from './types';
 
-export function useCommercialPanel() {
+/** Todas las solicitudes, tengan o no cotización asociada. */
+export function useRequests() {
   return useQuery({
-    queryKey: queryKeys.commercialPanel.all,
-    queryFn: getCommercialPanel,
+    queryKey: queryKeys.requests.list(),
+    queryFn: getRequests,
+  });
+}
+
+/** Cotizaciones en cualquier estado (sin `status`, todas). */
+export function useQuotes(status?: QuoteStatus) {
+  return useQuery({
+    queryKey: queryKeys.quotes.list(status),
+    queryFn: () => getQuotes(status),
   });
 }
 
@@ -23,9 +34,7 @@ export function useCreateRequest() {
   return useMutation({
     mutationFn: createRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.commercialPanel.all,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
     },
   });
 }
@@ -36,9 +45,7 @@ export function useCreateQuote() {
   return useMutation({
     mutationFn: createQuote,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.commercialPanel.all,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.quotes.all });
     },
   });
 }
@@ -49,9 +56,7 @@ export function useApproveQuote() {
   return useMutation({
     mutationFn: approveQuote,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.commercialPanel.all,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.quotes.all });
     },
   });
 }
@@ -62,9 +67,7 @@ export function useRejectQuote() {
   return useMutation({
     mutationFn: rejectQuote,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.commercialPanel.all,
-      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.quotes.all });
     },
   });
 }

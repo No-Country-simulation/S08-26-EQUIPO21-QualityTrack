@@ -146,7 +146,7 @@ export function ClientCombobox({
       <Input
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Escribí para buscar o crear…"
+        placeholder="Escribir para buscar o crear…"
         aria-invalid={Boolean(error)}
       />
       <div

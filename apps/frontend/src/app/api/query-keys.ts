@@ -8,7 +8,13 @@ export const queryKeys = {
     list: () => [...queryKeys.customers.all, 'list'] as const,
     detail: (id: string) => [...queryKeys.customers.all, 'detail', id] as const,
   },
-  commercialPanel: {
-    all: ['commercial-panel'] as const,
+  requests: {
+    all: ['requests'] as const,
+    list: () => [...queryKeys.requests.all, 'list'] as const,
+  },
+  quotes: {
+    all: ['quotes'] as const,
+    list: (status?: string) =>
+      [...queryKeys.quotes.all, 'list', status ?? 'all'] as const,
   },
 };

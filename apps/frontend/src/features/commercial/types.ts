@@ -15,7 +15,8 @@ export function quoteStatusLabel(status: QuoteStatus): string {
 export interface RequestSummary {
   id: string;
   customerId: string;
-  description: string;
+  piece: string;
+  quantity: number;
   createdAt: string;
   customer: Customer;
 }
@@ -43,11 +44,6 @@ export interface ApprovedQuote extends QuoteSummary {
   workOrder: WorkOrderSummary;
 }
 
-export interface CommercialPanel {
-  requestsPendingQuote: RequestSummary[];
-  quotesPendingApproval: QuoteSummary[];
-}
-
 export interface CreateQuotePayload {
   requestId: string;
   amount: number;
@@ -55,5 +51,6 @@ export interface CreateQuotePayload {
 
 export interface CreateRequestPayload {
   customerId: string;
-  description: string;
+  piece: string;
+  quantity: number;
 }

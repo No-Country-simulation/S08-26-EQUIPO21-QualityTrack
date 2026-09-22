@@ -14,6 +14,7 @@ import { quoteStatusLabel, type QuoteSummary } from '../types';
 export interface QuotesTableProps {
   readonly quotes: QuoteSummary[];
   readonly isLoading: boolean;
+  readonly onViewDetail: (quote: QuoteSummary) => void;
 }
 
 const amountFormatter = new Intl.NumberFormat('es-AR', {
@@ -21,7 +22,11 @@ const amountFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 });
 
-export function QuotesTable({ quotes, isLoading }: QuotesTableProps) {
+export function QuotesTable({
+  quotes,
+  isLoading,
+  onViewDetail,
+}: QuotesTableProps) {
   const approveQuote = useApproveQuote();
   const rejectQuote = useRejectQuote();
 
@@ -39,9 +44,9 @@ export function QuotesTable({ quotes, isLoading }: QuotesTableProps) {
       ),
     },
     {
-      key: 'description',
+      key: 'piece',
       header: 'Solicitud',
-      render: (row) => row.request.description,
+      render: (row) => `${row.request.piece} · x${row.request.quantity}`,
     },
     {
       key: 'amount',
@@ -66,6 +71,20 @@ export function QuotesTable({ quotes, isLoading }: QuotesTableProps) {
       header: '',
       className: 'text-right',
       render: (row) => {
+        if (row.status !== 'pending_approval') {
+          return (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onViewDetail(row)}
+              >
+                Ver detalle
+              </Button>
+            </div>
+          );
+        }
+
         const isApproving =
           approveQuote.isPending && approveQuote.variables === row.id;
         const isRejecting =
@@ -101,7 +120,7 @@ export function QuotesTable({ quotes, isLoading }: QuotesTableProps) {
       rows={quotes}
       getRowKey={(row) => row.id}
       isLoading={isLoading}
-      emptyMessage="No hay cotizaciones pendientes de aprobación."
+      emptyMessage="No hay cotizaciones."
     />
   );
 }

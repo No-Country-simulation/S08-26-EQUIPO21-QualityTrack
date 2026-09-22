@@ -17,7 +17,6 @@ import { ClientCombobox } from '@/features/clients/components/ClientCombobox';
 
 import { useCreateRequest } from '../hooks';
 import {
-  composeRequestDescription,
   newRequestSchema,
   type NewRequestFormInput,
   type NewRequestFormValues,
@@ -54,7 +53,8 @@ export function NewRequestDialog({
     createRequest.mutate(
       {
         customerId: values.customerId,
-        description: composeRequestDescription(values.piece, values.quantity),
+        piece: values.piece,
+        quantity: values.quantity,
       },
       { onSuccess: close },
     );

@@ -64,7 +64,7 @@ export function NewQuoteDialog({ request, onOpenChange }: NewQuoteDialogProps) {
           <DialogTitle>Crear cotización</DialogTitle>
           <DialogDescription>
             {request
-              ? `Solicitud de ${request.customer.name}: ${request.description}`
+              ? `Solicitud de ${request.customer.name}: ${request.piece} · x${request.quantity}`
               : null}
           </DialogDescription>
         </DialogHeader>

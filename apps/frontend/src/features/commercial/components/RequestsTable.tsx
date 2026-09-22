@@ -8,18 +8,27 @@ import {
   type DataTableColumn,
 } from '@/components/ui';
 
-import type { RequestSummary } from '../types';
+import {
+  quoteStatusLabel,
+  type QuoteSummary,
+  type RequestSummary,
+} from '../types';
 
 export interface RequestsTableProps {
   readonly requests: RequestSummary[];
   readonly isLoading: boolean;
+  /** Cotización asociada a cada solicitud, indexada por `requestId` -- una solicitud sin entrada acá todavía no tiene cotización. */
+  readonly quotesByRequestId: ReadonlyMap<string, QuoteSummary>;
   readonly onCreateQuote: (request: RequestSummary) => void;
+  readonly onViewQuote: (quote: QuoteSummary) => void;
 }
 
 export function RequestsTable({
   requests,
   isLoading,
+  quotesByRequestId,
   onCreateQuote,
+  onViewQuote,
 }: RequestsTableProps) {
   const columns: DataTableColumn<RequestSummary>[] = [
     {
@@ -33,9 +42,14 @@ export function RequestsTable({
       render: (row) => row.customer.name,
     },
     {
-      key: 'description',
+      key: 'piece',
       header: 'Pieza',
-      render: (row) => row.description,
+      render: (row) => row.piece,
+    },
+    {
+      key: 'quantity',
+      header: 'Cantidad',
+      render: (row) => row.quantity,
     },
     {
       key: 'createdAt',
@@ -46,15 +60,29 @@ export function RequestsTable({
     {
       key: 'status',
       header: 'Estado',
-      render: () => <Badge variant="outline">Pendiente</Badge>,
+      render: (row) => {
+        const quote = quotesByRequestId.get(row.id);
+        return quote ? (
+          <Badge variant="secondary">{quoteStatusLabel(quote.status)}</Badge>
+        ) : (
+          <Badge variant="outline">Sin cotizar</Badge>
+        );
+      },
     },
     {
       key: 'actions',
       header: 'Acción',
       className: 'text-right',
-      render: (row) => (
-        <Button onClick={() => onCreateQuote(row)}>Crear cotización</Button>
-      ),
+      render: (row) => {
+        const quote = quotesByRequestId.get(row.id);
+        return quote ? (
+          <Button variant="outline" onClick={() => onViewQuote(quote)}>
+            Ver detalle
+          </Button>
+        ) : (
+          <Button onClick={() => onCreateQuote(row)}>Crear cotización</Button>
+        );
+      },
     },
   ];
 
@@ -64,7 +92,7 @@ export function RequestsTable({
       rows={requests}
       getRowKey={(row) => row.id}
       isLoading={isLoading}
-      emptyMessage="No hay solicitudes pendientes de cotizar."
+      emptyMessage="No hay solicitudes."
     />
   );
 }

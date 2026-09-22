@@ -2,22 +2,37 @@ import { apiClient, endpoints } from '@/app/api';
 
 import type {
   ApprovedQuote,
-  CommercialPanel,
   CreateQuotePayload,
   CreateRequestPayload,
+  QuoteStatus,
   QuoteSummary,
   RequestSummary,
 } from './types';
 
-export async function getCommercialPanel(): Promise<CommercialPanel> {
+export async function getRequests(): Promise<RequestSummary[]> {
   try {
-    const response = await apiClient.get<CommercialPanel>(
-      endpoints.quotes.commercialPanel,
+    const response = await apiClient.get<RequestSummary[]>(
+      endpoints.requests.list,
     );
 
     return response.data;
   } catch {
-    throw new Error('No se pudo cargar el panel comercial.');
+    throw new Error('No se pudieron cargar las solicitudes.');
+  }
+}
+
+export async function getQuotes(status?: QuoteStatus): Promise<QuoteSummary[]> {
+  try {
+    const response = await apiClient.get<QuoteSummary[]>(
+      endpoints.quotes.list,
+      {
+        params: status ? { status } : undefined,
+      },
+    );
+
+    return response.data;
+  } catch {
+    throw new Error('No se pudieron cargar las cotizaciones.');
   }
 }
 

@@ -5,10 +5,11 @@ export const endpoints = {
   },
   requests: {
     create: '/requests',
+    list: '/requests',
   },
   quotes: {
     create: '/quotes',
-    commercialPanel: '/quotes/commercial-panel',
+    list: '/quotes',
     approve: (id: string) => `/quotes/${id}/approve`,
     reject: (id: string) => `/quotes/${id}/reject`,
   },

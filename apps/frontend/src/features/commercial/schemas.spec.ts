@@ -1,8 +1,4 @@
-import {
-  composeRequestDescription,
-  newQuoteSchema,
-  newRequestSchema,
-} from './schemas';
+import { newQuoteSchema, newRequestSchema } from './schemas';
 
 describe('newQuoteSchema', () => {
   it('accepts a positive amount with up to 2 decimals', () => {
@@ -66,14 +62,6 @@ describe('newRequestSchema', () => {
     );
     expect(newRequestSchema.safeParse({ ...valid, quantity: -3 }).success).toBe(
       false,
-    );
-  });
-});
-
-describe('composeRequestDescription', () => {
-  it('joins the piece and quantity with the "· x" separator', () => {
-    expect(composeRequestDescription('Brida DN200', 12)).toBe(
-      'Brida DN200 · x12',
     );
   });
 });

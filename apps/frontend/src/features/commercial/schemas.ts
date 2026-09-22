@@ -25,9 +25,6 @@ export const newQuoteSchema = z.object({
 export type NewQuoteFormInput = z.input<typeof newQuoteSchema>;
 export type NewQuoteFormValues = z.output<typeof newQuoteSchema>;
 
-// REQUEST solo tiene `description` (texto libre) en el backend -- no hay
-// columnas `piece`/`quantity` propias. `piece` + `quantity` se componen
-// en un único `description` al enviar (ver `composeRequestDescription`).
 export const newRequestSchema = z.object({
   customerId: z.string().min(1, 'Elegí un cliente.'),
   piece: z.string().trim().min(1, 'Ingresar la pieza.').max(150),
@@ -39,10 +36,3 @@ export const newRequestSchema = z.object({
 
 export type NewRequestFormInput = z.input<typeof newRequestSchema>;
 export type NewRequestFormValues = z.output<typeof newRequestSchema>;
-
-export function composeRequestDescription(
-  piece: string,
-  quantity: number,
-): string {
-  return `${piece} · x${quantity}`;
-}
