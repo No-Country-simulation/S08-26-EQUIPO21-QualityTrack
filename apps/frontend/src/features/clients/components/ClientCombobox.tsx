@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { cn } from 'cn';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -149,33 +148,28 @@ export function ClientCombobox({
         placeholder="Escribir para buscar o crear…"
         aria-invalid={Boolean(error)}
       />
-      <div
-        className={cn(
-          'absolute top-[calc(100%+4px)] left-0 right-0 z-10 max-h-58 overflow-y-auto rounded-lg border border-border bg-popover shadow-md',
-          !search.trim() && 'hidden',
-        )}
-      >
-        {matches.map((customer) => (
-          <button
-            key={customer.id}
-            type="button"
-            className="flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left last:border-0 hover:bg-muted"
-            onClick={() => pick(customer)}
-          >
-            <span className="flex size-7 flex-none items-center justify-center rounded-lg bg-muted text-xs font-bold">
-              {initialsOf(customer.name)}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium">
-                {customer.name}
+      {search.trim() && (
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-10 max-h-58 overflow-y-auto rounded-lg border border-border bg-popover shadow-md">
+          {matches.map((customer) => (
+            <button
+              key={customer.id}
+              type="button"
+              className="flex w-full items-center gap-3 border-b border-border/60 px-3 py-2.5 text-left last:border-0 hover:bg-muted"
+              onClick={() => pick(customer)}
+            >
+              <span className="flex size-7 flex-none items-center justify-center rounded-lg bg-muted text-xs font-bold">
+                {initialsOf(customer.name)}
               </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {customer.email}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">
+                  {customer.name}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {customer.email}
+                </span>
               </span>
-            </span>
-          </button>
-        ))}
-        {search.trim() && (
+            </button>
+          ))}
           <button
             type="button"
             className="flex w-full items-center gap-3 bg-info-bg px-3 py-2.5 text-left text-info hover:bg-info-bg/70"
@@ -188,8 +182,8 @@ export function ClientCombobox({
               Crear «{search.trim()}»
             </span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
