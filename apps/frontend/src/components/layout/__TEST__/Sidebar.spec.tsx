@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
-import { Sidebar } from './Sidebar';
+import { Sidebar } from '../Sidebar';
 
 describe('Sidebar', () => {
   it('marks the link matching the current route as active', () => {

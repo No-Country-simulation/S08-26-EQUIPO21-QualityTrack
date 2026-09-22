@@ -42,7 +42,7 @@ export class RequestsController {
   @ApiCreatedResponse({ type: RequestEntity })
   @ApiBadRequestResponse({
     description:
-      'El body no cumple las validaciones (customerId no es UUID, description vacía, etc.).',
+      'El body no cumple las validaciones (customerId no es UUID, piece vacío, quantity no positivo, etc.).',
   })
   @ApiNotFoundResponse({
     description: 'No existe un cliente con ese `customerId`.',
@@ -58,9 +58,9 @@ export class RequestsController {
   @ApiOperation({
     summary: 'Listado de solicitudes',
     description:
-      'Devuelve las solicitudes, más nuevas primero. Con ' +
-      '`pendingQuote=true` filtra a las que todavía no tienen cotización ' +
-      '— la cola de trabajo de Comercial (ADR-0003).',
+      'Devuelve las solicitudes con su cliente asociado, más nuevas ' +
+      'primero. Con `pendingQuote=true` filtra a las que todavía no ' +
+      'tienen cotización — la cola de trabajo de Comercial (ADR-0003).',
   })
   @ApiQuery({
     name: 'pendingQuote',
@@ -68,7 +68,7 @@ export class RequestsController {
     type: Boolean,
     description: 'Devolver solo las solicitudes sin cotización asociada.',
   })
-  @ApiOkResponse({ type: RequestEntity, isArray: true })
+  @ApiOkResponse({ type: RequestWithCustomerEntity, isArray: true })
   findAll(
     @Query('pendingQuote', new ParseBoolPipe({ optional: true }))
     pendingQuote?: boolean,

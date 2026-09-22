@@ -26,7 +26,8 @@ describe('RequestsController', () => {
   it('delega create en el service', () => {
     const dto = {
       customerId: '11111111-1111-1111-1111-111111111111',
-      description: 'Torneado de ejes',
+      piece: 'Torneado de ejes',
+      quantity: 10,
     };
     controller.create(dto);
     expect(service.create).toHaveBeenCalledWith(dto);

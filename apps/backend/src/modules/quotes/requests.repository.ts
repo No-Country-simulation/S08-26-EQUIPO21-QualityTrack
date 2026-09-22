@@ -3,6 +3,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import type { Prisma, Request } from '../../generated/prisma/client';
 
 /**
+ * Forma de un `REQUEST` con su `CUSTOMER` asociado. Única fuente de
+ * verdad del tipo — el detalle (`findByIdWithCustomer`) y el listado
+ * (`findMany`) comparten el mismo `include`, así que comparten el mismo
+ * shape.
+ */
+export type RequestWithCustomer = Prisma.RequestGetPayload<{
+  include: { customer: true };
+}>;
+
+/**
  * Acceso a datos de `REQUEST`. Envuelve las llamadas de Prisma para que
  * el service trabaje contra una interfaz acotada (ver
  * docs/backend-structure.md).
@@ -16,24 +26,34 @@ import type { Prisma, Request } from '../../generated/prisma/client';
 export class RequestsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { customerId: string; description: string }): Promise<Request> {
+  create(data: {
+    customerId: string;
+    piece: string;
+    quantity: number;
+  }): Promise<Request> {
     return this.prisma.request.create({
       data: {
-        description: data.description,
+        piece: data.piece,
+        quantity: data.quantity,
         customer: { connect: { id: data.customerId } },
       },
     });
   }
 
   /**
-   * Listado de solicitudes, más nuevas primero. Con `pendingQuote: true`
-   * devuelve solo las que todavía no tienen `QUOTE` asociada — la cola
-   * de "sin cotizar" para Comercial (ADR-0003).
+   * Listado de solicitudes con su cliente, más nuevas primero. Con
+   * `pendingQuote: true` devuelve solo las que todavía no tienen
+   * `QUOTE` asociada — la cola de "sin cotizar" para Comercial
+   * (ADR-0003). El cliente va incluido porque toda pantalla que lista
+   * solicitudes necesita mostrar quién las pidió.
    */
-  findMany(options: { pendingQuote?: boolean } = {}): Promise<Request[]> {
+  findMany(
+    options: { pendingQuote?: boolean } = {},
+  ): Promise<RequestWithCustomer[]> {
     return this.prisma.request.findMany({
       where: options.pendingQuote ? { quote: { is: null } } : undefined,
       orderBy: { createdAt: 'desc' },
+      include: { customer: true },
     });
   }
 
@@ -47,9 +67,7 @@ export class RequestsRepository {
    * viene aunque esté archivado: el detalle de una solicitud vieja tiene
    * que mostrar quién la pidió.
    */
-  findByIdWithCustomer(
-    id: string,
-  ): Promise<Prisma.RequestGetPayload<{ include: { customer: true } }> | null> {
+  findByIdWithCustomer(id: string): Promise<RequestWithCustomer | null> {
     return this.prisma.request.findUnique({
       where: { id },
       include: { customer: true },

@@ -142,4 +142,30 @@ describe('QuotesRepository', () => {
       });
     });
   });
+
+  describe('findMany', () => {
+    it('sin status, devuelve todas las cotizaciones, más nuevas primero', async () => {
+      prisma.quote.findMany.mockResolvedValue([]);
+
+      await repo.findMany();
+
+      expect(prisma.quote.findMany).toHaveBeenCalledWith({
+        where: undefined,
+        include: { request: { include: { customer: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('con status, filtra por ese estado', async () => {
+      prisma.quote.findMany.mockResolvedValue([]);
+
+      await repo.findMany({ status: QuoteStatus.approved });
+
+      expect(prisma.quote.findMany).toHaveBeenCalledWith({
+        where: { status: QuoteStatus.approved },
+        include: { request: { include: { customer: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+  });
 });

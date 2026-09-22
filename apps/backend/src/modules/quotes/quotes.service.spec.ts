@@ -11,18 +11,41 @@ import {
   QuoteStatus,
   WorkOrderStatus,
 } from '../../generated/prisma/client';
-import type { Quote, Request, WorkOrder } from '../../generated/prisma/client';
+import type {
+  Customer,
+  Quote,
+  Request,
+  WorkOrder,
+} from '../../generated/prisma/client';
 
+const CUSTOMER_ID = '99999999-9999-9999-9999-999999999999';
 const REQUEST_ID = '22222222-2222-2222-2222-222222222222';
 const QUOTE_ID = '11111111-1111-1111-1111-111111111111';
 const WO_ID = '33333333-3333-3333-3333-333333333333';
 
+const buildCustomer = (over: Partial<Customer> = {}): Customer => ({
+  id: CUSTOMER_ID,
+  name: 'Mecánica Sur SA',
+  taxId: '30-12345678-9',
+  email: 'compras@sur.example',
+  phone: null,
+  address: null,
+  archivedAt: null,
+  ...over,
+});
+
 const buildRequest = (over: Partial<Request> = {}): Request => ({
   id: REQUEST_ID,
-  customerId: '99999999-9999-9999-9999-999999999999',
-  description: 'Torneado de 20 ejes',
+  customerId: CUSTOMER_ID,
+  piece: 'Eje',
+  quantity: 20,
   createdAt: new Date('2026-09-08T10:00:00Z'),
   ...over,
+});
+
+const buildRequestWithCustomer = (over: Partial<Request> = {}) => ({
+  ...buildRequest(over),
+  customer: buildCustomer(),
 });
 
 const buildQuote = (over: Partial<Quote> = {}): Quote => ({
@@ -57,6 +80,7 @@ describe('QuotesService', () => {
       findByRequestId: vi.fn(),
       findByIdWithRelations: vi.fn(),
       findManyByStatus: vi.fn(),
+      findMany: vi.fn(),
       updateStatus: vi.fn(),
     };
     const requestsMock: Partial<Mocked<RequestsRepository>> = {
@@ -200,9 +224,9 @@ describe('QuotesService', () => {
 
   describe('commercialPanel (AC1 US-04)', () => {
     it('devuelve solicitudes sin cotizar y cotizaciones pendientes de aprobación', async () => {
-      const pendingRequests = [buildRequest()];
+      const pendingRequests = [buildRequestWithCustomer()];
       const pendingQuotes = [
-        { ...buildQuote(), request: { ...buildRequest(), customer: null } },
+        { ...buildQuote(), request: buildRequestWithCustomer() },
       ] as never;
       requests.findMany.mockResolvedValue(pendingRequests);
       quotes.findManyByStatus.mockResolvedValue(pendingQuotes);
@@ -217,6 +241,35 @@ describe('QuotesService', () => {
       expect(quotes.findManyByStatus).toHaveBeenCalledWith(
         QuoteStatus.pending_approval,
       );
+    });
+  });
+
+  describe('findAll', () => {
+    it('devuelve todas las cotizaciones sin filtro', async () => {
+      const all = [
+        { ...buildQuote(), request: buildRequestWithCustomer() },
+      ] as never;
+      quotes.findMany.mockResolvedValue(all);
+
+      await expect(service.findAll()).resolves.toBe(all);
+      expect(quotes.findMany).toHaveBeenCalledWith({ status: undefined });
+    });
+
+    it('filtra por status cuando se pasa uno', async () => {
+      const approved = [
+        {
+          ...buildQuote({ status: QuoteStatus.approved }),
+          request: buildRequestWithCustomer(),
+        },
+      ] as never;
+      quotes.findMany.mockResolvedValue(approved);
+
+      await expect(service.findAll(QuoteStatus.approved)).resolves.toBe(
+        approved,
+      );
+      expect(quotes.findMany).toHaveBeenCalledWith({
+        status: QuoteStatus.approved,
+      });
     });
   });
 

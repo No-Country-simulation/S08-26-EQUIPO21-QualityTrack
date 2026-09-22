@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -15,6 +17,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { QuotesService } from './quotes.service';
@@ -25,6 +28,7 @@ import {
   QuoteWithRelationsEntity,
 } from './entities/quote.entity';
 import { CommercialPanelEntity } from './entities/commercial-panel.entity';
+import { QuoteStatus } from '../../generated/prisma/client';
 
 @ApiTags('quotes')
 @Controller('quotes')
@@ -65,6 +69,29 @@ export class QuotesController {
   @ApiOkResponse({ type: CommercialPanelEntity })
   commercialPanel() {
     return this.quotes.commercialPanel();
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Listado de cotizaciones',
+    description:
+      'Devuelve las cotizaciones con su solicitud y cliente, más nuevas ' +
+      'primero — la consulta histórica que necesita ver una cotización ' +
+      'ya aprobada o rechazada, que salió de `commercial-panel`. Con ' +
+      '`status` filtra por estado.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: QuoteStatus,
+    description: 'Filtrar por estado. Sin esto, devuelve todas.',
+  })
+  @ApiOkResponse({ type: QuoteWithRelationsEntity, isArray: true })
+  findAll(
+    @Query('status', new ParseEnumPipe(QuoteStatus, { optional: true }))
+    status?: QuoteStatus,
+  ) {
+    return this.quotes.findAll(status);
   }
 
   @Get(':id')

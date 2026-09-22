@@ -69,5 +69,7 @@ el expediente completo.
 
 1. [ ] Validar con QA que este modelo cubre lo que sus criterios de
        aceptación esperan.
-2. [ ] Definir si `REQUEST` necesita campos adicionales (ej. fecha
-       límite deseada) — fuera de alcance por ahora.
+2. [x] Definir si `REQUEST` necesita campos adicionales (ej. fecha
+       límite deseada) — resuelto parcialmente en ADR-0014: se agregan
+       `piece` + `quantity` (reemplazan `description`). Una fecha límite
+       deseada sigue fuera de alcance por ahora.

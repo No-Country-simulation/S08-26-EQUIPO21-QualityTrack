@@ -23,7 +23,8 @@ const buildCustomer = (over: Partial<Customer> = {}): Customer => ({
 const buildRequest = (over: Partial<Request> = {}): Request => ({
   id: REQUEST_ID,
   customerId: CUSTOMER_ID,
-  description: 'Torneado de 20 ejes de acero',
+  piece: 'Eje de acero',
+  quantity: 20,
   createdAt: new Date('2026-09-08T10:00:00Z'),
   ...over,
 });
@@ -64,13 +65,15 @@ describe('RequestsService', () => {
 
       const result = await service.create({
         customerId: CUSTOMER_ID,
-        description: 'Torneado de 20 ejes de acero',
+        piece: 'Eje de acero',
+        quantity: 20,
       });
 
       expect(result).toBe(created);
       expect(requests.create).toHaveBeenCalledWith({
         customerId: CUSTOMER_ID,
-        description: 'Torneado de 20 ejes de acero',
+        piece: 'Eje de acero',
+        quantity: 20,
       });
     });
 
@@ -78,7 +81,7 @@ describe('RequestsService', () => {
       customers.findById.mockResolvedValue(null);
 
       await expect(
-        service.create({ customerId: CUSTOMER_ID, description: 'x' }),
+        service.create({ customerId: CUSTOMER_ID, piece: 'x', quantity: 1 }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(requests.create).not.toHaveBeenCalled();
     });
@@ -89,7 +92,7 @@ describe('RequestsService', () => {
       );
 
       await expect(
-        service.create({ customerId: CUSTOMER_ID, description: 'x' }),
+        service.create({ customerId: CUSTOMER_ID, piece: 'x', quantity: 1 }),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(requests.create).not.toHaveBeenCalled();
     });
@@ -106,6 +109,16 @@ describe('RequestsService', () => {
       requests.findMany.mockResolvedValue([]);
       await service.findAll(true);
       expect(requests.findMany).toHaveBeenCalledWith({ pendingQuote: true });
+    });
+
+    it('devuelve las solicitudes con su cliente', async () => {
+      const withCustomer = { ...buildRequest(), customer: buildCustomer() };
+      requests.findMany.mockResolvedValue([withCustomer]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([withCustomer]);
+      expect(result[0].customer.id).toBe(CUSTOMER_ID);
     });
   });
 
